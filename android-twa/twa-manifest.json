@@ -1,0 +1,23 @@
+{
+  "packageId": "com.resqueue.app",
+  "host": "resqueue.example.com",
+  "name": "ResQueue",
+  "launcherName": "ResQueue",
+  "display": "standalone",
+  "themeColor": "#0D1420",
+  "navigationColor": "#0D1420",
+  "backgroundColor": "#0D1420",
+  "enableNotifications": false,
+  "startUrl": "/mobile",
+  "iconUrl": "https://resqueue.example.com/static/icon-512.png",
+  "maskableIconUrl": "https://resqueue.example.com/static/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "shortcuts": [],
+  "generatorApp": "manually-authored-see-README"
+}

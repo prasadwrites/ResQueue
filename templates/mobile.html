@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ResQueue</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D1420">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ResQueue">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<link rel="icon" href="/static/icon-192.png">
+<style>
+:root{
+  --paper:#EEF1F6; --card:#FFFFFF; --ink:#131B26; --muted:#5B6779; --line:#DBE1EA;
+  --accent:#C98A00; --accent-ink:#1A1200; --accent-soft:#FBEED0;
+  --ok:#167A5C; --ok-soft:#E1F3EC;
+  --warn:#B8540C; --warn-soft:#FBEADB;
+  --danger:#B23A3A; --danger-soft:#F9E3E1;
+  --shadow:0 1px 2px rgba(19,27,38,.06),0 8px 24px -12px rgba(19,27,38,.18);
+  --display:"Bahnschrift SemiBold",Bahnschrift,"Segoe UI Semibold","Segoe UI",system-ui,sans-serif;
+  --body:"Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"Cascadia Code",ui-monospace,Consolas,monospace;
+  --topbar-h:56px; --nav-h:60px;
+}
+:root[data-theme="dark"]{
+  --paper:#0D1420; --card:#16202E; --ink:#E7EDF6; --muted:#8393A8; --line:#263447;
+  --accent:#F2B93B; --accent-ink:#1A1200; --accent-soft:#3A2E0F;
+  --ok:#4FBE9A; --ok-soft:#12302A;
+  --warn:#E5934A; --warn-soft:#3A2712;
+  --danger:#E27B7B; --danger-soft:#3A1E1E;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 28px -14px rgba(0,0,0,.55);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1420; --card:#16202E; --ink:#E7EDF6; --muted:#8393A8; --line:#263447;
+    --accent:#F2B93B; --accent-ink:#1A1200; --accent-soft:#3A2E0F;
+    --ok:#4FBE9A; --ok-soft:#12302A;
+    --warn:#E5934A; --warn-soft:#3A2712;
+    --danger:#E27B7B; --danger-soft:#3A1E1E;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 28px -14px rgba(0,0,0,.55);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:var(--paper);color:var(--ink);font:15px/1.5 var(--body);
+  -webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
+::selection{background:var(--accent-soft);color:var(--ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+button{font:inherit;cursor:pointer}
+input,select{font-size:16px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+.shell{display:flex;flex-direction:column;height:100dvh;height:100vh;overflow:hidden}
+
+/* ---- topbar ---- */
+.topbar{
+  flex:0 0 auto;display:flex;align-items:center;gap:8px;
+  height:calc(var(--topbar-h) + env(safe-area-inset-top));
+  padding:env(safe-area-inset-top) 8px 0;
+  border-bottom:1px solid var(--line);background:var(--card)}
+.icon-btn{
+  width:40px;height:40px;border:0;background:transparent;border-radius:99px;
+  display:flex;align-items:center;justify-content:center;color:var(--ink);flex:0 0 auto}
+.icon-btn:active{background:var(--paper)}
+.topbar-title{
+  flex:1;display:flex;align-items:center;gap:8px;min-width:0;
+  font:600 17px/1 var(--display);letter-spacing:.02em}
+.topbar-title .mark{
+  font:700 11px/1 var(--display);letter-spacing:.1em;background:var(--ink);color:var(--paper);
+  padding:5px 6px;border-radius:4px;flex:0 0 auto}
+.topbar-title span.txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---- content / screens ---- */
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(24px + env(safe-area-inset-bottom))}
+.screen.hidden{display:none}
+
+/* ---- bottom nav ---- */
+.bottom-nav{
+  flex:0 0 auto;display:flex;border-top:1px solid var(--line);background:var(--card);
+  padding-bottom:env(safe-area-inset-bottom)}
+.bottom-nav.hidden{display:none}
+.nav-btn{
+  flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;
+  gap:2px;padding:9px 0 8px;color:var(--muted);height:var(--nav-h)}
+.nav-btn svg{width:22px;height:22px}
+.nav-btn .lbl{font-size:10.5px;font-weight:600;letter-spacing:.02em}
+.nav-btn.active{color:var(--accent-ink)}
+:root[data-theme="dark"] .nav-btn.active{color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .nav-btn.active{color:var(--accent)}}
+.nav-btn.active svg{stroke:currentColor}
+
+/* ---- auth screen ---- */
+.auth-wrap{padding-top:8vh}
+.brand-hero{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:26px}
+.brand-hero .mark{
+  font:700 22px/1 var(--display);letter-spacing:.12em;background:var(--ink);color:var(--paper);
+  padding:12px 16px;border-radius:12px}
+.brand-hero .tag{font-size:13px;color:var(--muted)}
+.tabs{display:flex;gap:4px;padding:6px;background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:16px}
+.tab{flex:1;border:0;background:transparent;padding:10px 4px;border-radius:9px;font:600 12px/1 var(--mono);letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+.tab.active{background:var(--paper);color:var(--ink);box-shadow:var(--shadow)}
+.auth-panel-body{display:flex;flex-direction:column;gap:16px}
+.auth-panel-body.hidden{display:none}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;color:var(--muted);font-weight:600}
+.field input, .field select{padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.field input:focus, .field select:focus{border-color:var(--accent)}
+.hint{font-size:12.5px;color:var(--muted);text-align:center;padding:10px 0}
+.hint button.link{border:0;background:none;color:var(--accent-ink);font-weight:700;padding:0}
+:root[data-theme="dark"] .hint button.link{color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hint button.link{color:var(--accent)}}
+.primary-btn{
+  width:100%;padding:14px;border:0;border-radius:11px;background:var(--ink);color:var(--paper);
+  font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px}
+.primary-btn:active{opacity:.85}
+.primary-btn:disabled{opacity:.5}
+.primary-btn.accent{background:var(--accent);color:var(--accent-ink)}
+.primary-btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);margin-top:10px}
+
+/* ---- board ---- */
+.section-title{
+  display:flex;align-items:center;gap:8px;font:700 13px/1 var(--display);letter-spacing:.04em;
+  text-transform:uppercase;color:var(--muted);margin:20px 0 10px}
+.section-title:first-child{margin-top:0}
+.section-title .count{
+  font:700 10.5px/1 var(--mono);background:var(--card);border:1px solid var(--line);color:var(--ink);
+  padding:3px 8px;border-radius:99px}
+.empty-state{text-align:center;padding:28px 16px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:14px;font-size:13.5px}
+.qcard{
+  display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
+  border-radius:14px;padding:13px 14px;box-shadow:var(--shadow);margin-bottom:10px}
+.qcard:active{background:var(--paper)}
+.pos-badge{
+  flex:0 0 50px;height:50px;border-radius:10px;background:var(--paper);border:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.pos-badge.mine{background:var(--accent-soft);border-color:var(--accent)}
+.pos-badge .no{font:9.5px/1 var(--mono);color:var(--muted);letter-spacing:.04em}
+.pos-badge .num{font:800 17px/1 var(--mono);font-variant-numeric:tabular-nums}
+.pos-badge.mine .num{color:var(--accent-ink)}
+:root[data-theme="dark"] .pos-badge.mine .num{color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pos-badge.mine .num{color:var(--accent)}}
+.qcard-info{flex:1;min-width:0}
+.qcard-name{font:600 14.5px var(--display);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qcard-sub{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.chip{font:700 9.5px/1 var(--mono);letter-spacing:.05em;text-transform:uppercase;padding:4px 7px;border-radius:5px}
+.chip.type{background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+.chip.open{background:var(--ok-soft);color:var(--ok)}
+.chip.suspended{background:var(--warn-soft);color:var(--warn)}
+.chip.expired{background:var(--danger-soft);color:var(--danger)}
+.chip.wait{background:var(--accent-soft);color:var(--accent-ink)}
+:root[data-theme="dark"] .chip.wait{color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chip.wait{color:var(--accent)}}
+.chevron-r{flex:0 0 auto;color:var(--muted)}
+
+/* ---- FAB ---- */
+.fab{
+  position:fixed;right:18px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);
+  width:56px;height:56px;border-radius:99px;border:0;background:var(--accent);color:var(--accent-ink);
+  box-shadow:0 6px 18px -4px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;
+  font-size:26px;z-index:20}
+.fab.hidden{display:none}
+
+/* ---- sheet ---- */
+.sheet-backdrop{position:fixed;inset:0;background:rgba(10,14,20,.45);z-index:30;opacity:0;pointer-events:none;transition:opacity .18s ease}
+.sheet-backdrop.open{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:31;background:var(--card);
+  border-radius:18px 18px 0 0;padding:10px 18px calc(22px + env(safe-area-inset-bottom));
+  transform:translateY(100%);transition:transform .22s ease;box-shadow:0 -8px 30px -10px rgba(0,0,0,.3);
+  max-height:80vh;overflow-y:auto}
+.sheet.open{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;background:var(--line);border-radius:99px;margin:0 auto 14px}
+.sheet h2{font:700 17px var(--display);margin:0 0 16px}
+
+/* ---- detail screen ---- */
+.detail-hero{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.detail-hero .qname{font:700 20px var(--display);letter-spacing:.01em;text-wrap:balance}
+.detail-hero .qid{
+  display:inline-flex;align-items:center;gap:5px;font:12px var(--mono);color:var(--muted);
+  background:var(--paper);border:1px solid var(--line);padding:4px 8px;border-radius:6px;margin-top:8px}
+.detail-hero .qowner{font-size:12.5px;color:var(--muted);margin-top:6px}
+.detail-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat-tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.stat-tile .n{font:800 22px var(--mono);font-variant-numeric:tabular-nums}
+.stat-tile .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.detail-section{margin-bottom:18px}
+.detail-section h3{font:700 12.5px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.select-all{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-bottom:8px}
+.select-all input{width:16px;height:16px;accent-color:var(--accent)}
+.member{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 11px;margin-bottom:7px;font-size:13.5px}
+.member input[type="checkbox"]{width:17px;height:17px;accent-color:var(--accent);flex:0 0 auto}
+.member .e{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.member .member-wait{font:700 10.5px var(--mono);color:var(--accent-ink);background:var(--accent-soft);padding:3px 7px;border-radius:99px;flex:0 0 auto}
+:root[data-theme="dark"] .member .member-wait{color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .member .member-wait{color:var(--accent)}}
+.member .member-wait.unset{color:var(--muted);background:var(--paper)}
+.member .rm{border:0;background:none;color:var(--muted);width:26px;height:26px;border-radius:99px;flex:0 0 auto}
+.wait-row{display:flex;gap:8px;margin-top:10px}
+.wait-row input{flex:1;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.wait-row button{padding:0 16px;border-radius:10px;border:0;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:13px}
+.share-row{display:flex;gap:8px}
+.share-row input{flex:1;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.share-row button{padding:0 16px;border-radius:10px;border:0;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:13px}
+.detail-actions{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+.danger-btn{width:100%;padding:13px;border-radius:11px;border:1px solid var(--danger-soft);background:transparent;color:var(--danger);font-weight:700}
+
+/* ---- account ---- */
+.account-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;text-align:center;margin-bottom:18px}
+.account-avatar{
+  width:64px;height:64px;border-radius:99px;background:var(--accent-soft);color:var(--accent-ink);
+  display:flex;align-items:center;justify-content:center;font:700 24px var(--display);margin:0 auto 12px}
+:root[data-theme="dark"] .account-avatar{color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .account-avatar{color:var(--accent)}}
+.account-email{font:600 15px var(--body);word-break:break-all}
+.account-role{display:inline-block;margin-top:8px;font:700 10.5px var(--mono);letter-spacing:.06em;background:var(--accent-soft);color:var(--accent-ink);padding:4px 10px;border-radius:99px}
+:root[data-theme="dark"] .account-role{color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .account-role{color:var(--accent)}}
+.option-row{
+  display:flex;align-items:center;justify-content:space-between;background:var(--card);
+  border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;font-size:14px}
+.option-row .switch{
+  width:44px;height:26px;border-radius:99px;background:var(--paper);border:1px solid var(--line);
+  position:relative;flex:0 0 auto}
+.option-row .switch .knob{
+  position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:99px;background:var(--muted);
+  transition:transform .15s ease}
+.option-row .switch.on{background:var(--accent-soft);border-color:var(--accent)}
+.option-row .switch.on .knob{transform:translateX(18px);background:var(--accent)}
+
+/* ---- toasts ---- */
+.toasts{position:fixed;top:calc(env(safe-area-inset-top) + 8px);left:16px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:60}
+.toast{background:var(--ink);color:var(--paper);padding:12px 15px;border-radius:11px;font-size:13.5px;box-shadow:var(--shadow);animation:toast-in .18s ease-out}
+.toast.err{background:var(--danger)}
+.toast.ok{background:var(--ok)}
+@keyframes toast-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <button class="icon-btn hidden" id="backBtn" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="topbar-title"><span class="mark">RQ</span><span class="txt" id="topbarTitle">ResQueue</span></div>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/></svg>
+    </button>
+  </header>
+
+  <main class="content">
+    <!-- AUTH -->
+    <section class="screen" id="screen-auth">
+      <div class="auth-wrap">
+        <div class="brand-hero"><div class="mark">RQ</div><div class="tag">now serving</div></div>
+        <div class="tabs">
+          <button class="tab active" data-authtab="register">Sign up</button>
+          <button class="tab" data-authtab="verify">Verify</button>
+          <button class="tab" data-authtab="login">Log in</button>
+        </div>
+
+        <div class="auth-panel-body" data-authpanel="register">
+          <div class="field"><label>Email</label><input id="regEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
+          <div class="field"><label>Password</label><input id="regPassword" type="password" placeholder="At least 8 characters" autocomplete="new-password"></div>
+          <button class="primary-btn accent" id="regBtn">Create account</button>
+          <p class="hint">Already have one? <button class="link" data-authgoto="login">Log in</button></p>
+        </div>
+
+        <div class="auth-panel-body hidden" data-authpanel="verify">
+          <div class="field"><label>Email</label><input id="verEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
+          <div class="field"><label>Verification code</label><input id="verCode" placeholder="000000" maxlength="6"></div>
+          <button class="primary-btn ghost" id="fetchCodeBtn">Fetch code from inbox</button>
+          <button class="primary-btn accent" id="verBtn">Verify email</button>
+        </div>
+
+        <div class="auth-panel-body hidden" data-authpanel="login">
+          <div class="field"><label>Email</label><input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
+          <div class="field"><label>Password</label><input id="loginPassword" type="password" placeholder="Your password" autocomplete="current-password"></div>
+          <button class="primary-btn accent" id="loginBtn">Log in</button>
+          <p class="hint">New here? <button class="link" data-authgoto="register">Sign up</button></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOARD -->
+    <section class="screen hidden" id="screen-board">
+      <div id="invitedSection" style="display:none">
+        <div class="section-title">Invited to you <span class="count" id="cInvited"></span></div>
+        <div id="invitedList"></div>
+      </div>
+      <div class="section-title">Your queues <span class="count" id="cMine"></span></div>
+      <div id="createdList"></div>
+      <div class="section-title">Joined <span class="count" id="cJoined"></span></div>
+      <div id="joinedList"></div>
+    </section>
+
+    <!-- SEARCH -->
+    <section class="screen hidden" id="screen-search">
+      <div class="field"><label>Email, ID, or &gt;name</label><input id="searchQ" placeholder="e.g. alice@example.com, 4625126077, >brunch"></div>
+      <button class="primary-btn accent" id="searchBtn">Search public queues</button>
+      <p class="hint" style="margin-top:12px">Only public queues are searchable. A private queue only appears once its owner invites you by email.</p>
+      <div id="searchResults" style="margin-top:16px"></div>
+    </section>
+
+    <!-- DETAIL -->
+    <section class="screen hidden" id="screen-detail">
+      <div id="detailBody"></div>
+    </section>
+
+    <!-- ACCOUNT -->
+    <section class="screen hidden" id="screen-account">
+      <div class="account-card">
+        <div class="account-avatar" id="accountInitial">?</div>
+        <div class="account-email" id="accountEmail"></div>
+        <div class="account-role" id="accountRole"></div>
+      </div>
+      <div class="option-row">
+        <span>Dark appearance</span>
+        <button class="switch" id="themeSwitch"><span class="knob"></span></button>
+      </div>
+      <button class="primary-btn ghost" id="logoutBtn">Log out</button>
+    </section>
+  </main>
+
+  <nav class="bottom-nav hidden" id="bottomNav">
+    <button class="nav-btn active" data-nav="board">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M8 4v5"/></svg>
+      <span class="lbl">Board</span>
+    </button>
+    <button class="nav-btn" data-nav="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/></svg>
+      <span class="lbl">Search</span>
+    </button>
+    <button class="nav-btn" data-nav="account">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.2" r="3.6"/><path d="M4.5 20c1.6-4 4.4-6 7.5-6s5.9 2 7.5 6"/></svg>
+      <span class="lbl">Account</span>
+    </button>
+  </nav>
+
+  <button class="fab hidden" id="fabBtn" aria-label="New queue">+</button>
+</div>
+
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<div class="sheet" id="createSheet">
+  <div class="sheet-handle"></div>
+  <h2>New queue</h2>
+  <div class="field"><label>Name</label><input id="qName" placeholder="e.g. Weekend brunch"></div>
+  <div class="field"><label>Type</label>
+    <select id="qType"><option value="public">Public</option><option value="private">Private</option></select>
+  </div>
+  <div class="field"><label>Expiry (optional)</label><input id="qExpiry" type="datetime-local"></div>
+  <button class="primary-btn accent" id="createSubmitBtn">Create queue</button>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+let TOKEN = localStorage.getItem('rq_token');
+let EMAIL = localStorage.getItem('rq_email');
+let currentTab = 'board';
+let currentScreen = 'auth';
+let detailQid = null;
+
+// ---------- theme ----------
+const root = document.documentElement;
+const savedTheme = localStorage.getItem('rq_theme');
+root.setAttribute('data-theme', savedTheme || 'dark'); // dark by default until the user picks light
+function isDark() {
+  return root.getAttribute('data-theme') === 'dark';
+}
+function setTheme(dark) {
+  root.setAttribute('data-theme', dark ? 'dark' : 'light');
+  localStorage.setItem('rq_theme', dark ? 'dark' : 'light');
+  syncThemeSwitch();
+}
+function syncThemeSwitch() {
+  document.getElementById('themeSwitch').classList.toggle('on', isDark());
+}
+document.getElementById('themeBtn').onclick = () => setTheme(!isDark());
+document.getElementById('themeSwitch').onclick = () => setTheme(!isDark());
+syncThemeSwitch();
+
+// ---------- toasts ----------
+function toast(message, kind) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (kind ? ' ' + kind : '');
+  el.textContent = message;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3600);
+}
+
+// ---------- api ----------
+async function api(method, path, body) {
+  const headers = {'Content-Type': 'application/json'};
+  if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
+  const r = await fetch(path, {method, headers, body: body !== undefined ? JSON.stringify(body) : undefined});
+  let data = {};
+  try { data = await r.json(); } catch (_) {}
+  if (!r.ok) throw new Error(data.error || ('request failed (' + r.status + ')'));
+  return data;
+}
+async function withBusy(btn, fn) {
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Working…';
+  try { await fn(); } catch (e) { toast(e.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = original; }
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---------- screen navigation ----------
+function showScreen(name, opts) {
+  opts = opts || {};
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById('screen-' + name).classList.remove('hidden');
+  currentScreen = name;
+  const titles = {board: 'Board', search: 'Find a queue', account: 'Account', auth: 'ResQueue', detail: opts.title || 'Queue'};
+  document.getElementById('topbarTitle').textContent = titles[name];
+  document.getElementById('backBtn').classList.toggle('hidden', name !== 'detail');
+  if (name !== 'detail') {
+    currentTab = name === 'auth' ? currentTab : name;
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
+  }
+  document.getElementById('fabBtn').classList.toggle('hidden', name !== 'board');
+  document.querySelector('.content').scrollTop = 0;
+}
+document.getElementById('backBtn').onclick = () => showScreen(currentTab);
+document.querySelectorAll('.nav-btn').forEach(b => b.onclick = () => {
+  showScreen(b.dataset.nav);
+  if (b.dataset.nav === 'board') loadBoard();
+  if (b.dataset.nav === 'account') renderAccount();
+});
+
+// ---------- auth tabs ----------
+document.querySelectorAll('[data-authtab]').forEach(t => t.onclick = () => showAuthTab(t.dataset.authtab));
+document.querySelectorAll('[data-authgoto]').forEach(b => b.onclick = () => showAuthTab(b.dataset.authgoto));
+function showAuthTab(name) {
+  document.querySelectorAll('[data-authtab]').forEach(t => t.classList.toggle('active', t.dataset.authtab === name));
+  document.querySelectorAll('[data-authpanel]').forEach(p => p.classList.toggle('hidden', p.dataset.authpanel !== name));
+}
+
+document.getElementById('regBtn').onclick = (e) => withBusy(e.target, async () => {
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  await api('POST', '/api/register', {email, password});
+  toast('Account created — check your inbox for a code.', 'ok');
+  document.getElementById('verEmail').value = email;
+  showAuthTab('verify');
+});
+document.getElementById('fetchCodeBtn').onclick = (e) => withBusy(e.target, async () => {
+  const email = document.getElementById('verEmail').value.trim();
+  if (!email) throw new Error('enter your email first');
+  const mails = await (await fetch('/api/dev/outbox?email=' + encodeURIComponent(email))).json();
+  const last = [...mails].reverse().find(m => /verification code is: (\d{6})/.test(m.body));
+  if (!last) throw new Error('no verification email found yet');
+  document.getElementById('verCode').value = last.body.match(/(\d{6})/)[1];
+  toast('Code retrieved.', 'ok');
+});
+document.getElementById('verBtn').onclick = (e) => withBusy(e.target, async () => {
+  const email = document.getElementById('verEmail').value.trim();
+  const code = document.getElementById('verCode').value.trim();
+  await api('POST', '/api/verify', {email, code});
+  toast('Verified — log in now.', 'ok');
+  document.getElementById('loginEmail').value = email;
+  showAuthTab('login');
+});
+document.getElementById('loginBtn').onclick = (e) => withBusy(e.target, async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const data = await api('POST', '/api/login', {email, password});
+  TOKEN = data.token; EMAIL = data.email;
+  localStorage.setItem('rq_token', TOKEN); localStorage.setItem('rq_email', EMAIL);
+  toast('Welcome, ' + EMAIL + '.', 'ok');
+  enterApp(data.is_admin);
+});
+document.getElementById('logoutBtn').onclick = () => {
+  TOKEN = null; EMAIL = null;
+  localStorage.removeItem('rq_token'); localStorage.removeItem('rq_email');
+  document.getElementById('bottomNav').classList.add('hidden');
+  document.querySelectorAll('.auth-panel-body input').forEach(i => i.value = '');
+  showAuthTab('login');
+  showScreen('auth');
+  toast('Logged out.');
+};
+
+function enterApp(isAdmin) {
+  document.getElementById('bottomNav').classList.remove('hidden');
+  window.IS_ADMIN = !!isAdmin;
+  showScreen('board');
+  loadBoard();
+}
+
+// ---------- board ----------
+function statusChip(q) {
+  if (q.suspended) return '<span class="chip suspended">Suspended</span>';
+  if (q.expired) return '<span class="chip expired">Expired</span>';
+  return '<span class="chip open">Open</span>';
+}
+function qcardHtml(q) {
+  const mine = q.owner === EMAIL;
+  const joined = q.your_position != null;
+  return '<div class="qcard" data-qid="' + q.queue_id + '">' +
+    '<div class="pos-badge' + (joined ? ' mine' : '') + '">' +
+      '<div class="no">' + (joined ? 'NO.' : 'LINE') + '</div>' +
+      '<div class="num">' + (joined ? q.your_position : q.total_members) + '</div>' +
+    '</div>' +
+    '<div class="qcard-info">' +
+      '<div class="qcard-name">' + esc(q.name) + '</div>' +
+      '<div class="qcard-sub">' + (mine ? 'You own this queue' : 'Owner ' + esc(q.owner)) + '</div>' +
+      '<div class="chips"><span class="chip type">' + q.type + '</span>' + statusChip(q) +
+        (joined && q.your_wait_minutes != null ? '<span class="chip wait">~' + q.your_wait_minutes + ' min</span>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="chevron-r"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>' +
+  '</div>';
+}
+function renderList(containerId, list, emptyText) {
+  const el = document.getElementById(containerId);
+  if (!list.length) { el.innerHTML = '<div class="empty-state">' + emptyText + '</div>'; return; }
+  el.innerHTML = list.map(qcardHtml).join('');
+  el.querySelectorAll('.qcard').forEach(card => card.onclick = () => openDetail(card.dataset.qid));
+}
+async function loadBoard() {
+  try {
+    const data = await api('GET', '/api/queues');
+    document.getElementById('cMine').textContent = data.created_by_me.length;
+    document.getElementById('cJoined').textContent = data.joined_by_me.length;
+    document.getElementById('cInvited').textContent = data.invited.length;
+    document.getElementById('invitedSection').style.display = data.invited.length ? '' : 'none';
+    renderList('invitedList', data.invited, 'No pending invitations.');
+    renderList('createdList', data.created_by_me, 'You haven’t created a queue yet. Tap + to start one.');
+    renderList('joinedList', data.joined_by_me, 'You haven’t joined any queues yet.');
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+// ---------- create sheet ----------
+function openSheet() {
+  document.getElementById('sheetBackdrop').classList.add('open');
+  document.getElementById('createSheet').classList.add('open');
+}
+function closeSheet() {
+  document.getElementById('sheetBackdrop').classList.remove('open');
+  document.getElementById('createSheet').classList.remove('open');
+}
+document.getElementById('fabBtn').onclick = openSheet;
+document.getElementById('sheetBackdrop').onclick = closeSheet;
+document.getElementById('createSubmitBtn').onclick = (e) => withBusy(e.target, async () => {
+  const name = document.getElementById('qName').value.trim();
+  const type = document.getElementById('qType').value;
+  const expiryRaw = document.getElementById('qExpiry').value;
+  await api('POST', '/api/queues', {name, type, expiry_date: expiryRaw || null});
+  document.getElementById('qName').value = '';
+  document.getElementById('qExpiry').value = '';
+  toast('Queue created.', 'ok');
+  closeSheet();
+  loadBoard();
+});
+
+// ---------- search ----------
+document.getElementById('searchBtn').onclick = (e) => withBusy(e.target, async () => {
+  const q = document.getElementById('searchQ').value.trim();
+  if (!q) { renderList('searchResults', [], 'Type an email, ID, or name to search.'); return; }
+  const results = await api('GET', '/api/queues/search?q=' + encodeURIComponent(q));
+  renderList('searchResults', results, 'No public queues matched that search.');
+});
+
+// ---------- detail ----------
+async function openDetail(qid) {
+  detailQid = qid;
+  showScreen('detail', {title: 'Queue'});
+  document.getElementById('detailBody').innerHTML = '<div class="empty-state">Loading…</div>';
+  await refreshDetail();
+}
+async function refreshDetail() {
+  try {
+    const q = await api('GET', '/api/queues/' + detailQid);
+    document.getElementById('topbarTitle').textContent = q.name;
+    renderDetail(q);
+  } catch (e) { toast(e.message, 'err'); showScreen(currentTab); }
+}
+function renderDetail(q) {
+  const mine = q.owner === EMAIL;
+  const joined = q.your_position != null;
+  const rows = q.member_details
+    ? q.member_details.map(m => ({email: m.email, waitMinutes: m.wait_minutes}))
+    : q.members.map(e => ({email: e, waitMinutes: null}));
+
+  const memberRows = rows.map((m) => (
+    '<div class="member">' +
+      (mine ? '<input type="checkbox" class="member-check" data-email="' + esc(m.email) + '">' : '') +
+      '<span class="e">' + esc(m.email) + (m.email === EMAIL ? ' (you)' : '') + '</span>' +
+      (mine ? '<span class="member-wait' + (m.waitMinutes == null ? ' unset' : '') + '">' +
+                (m.waitMinutes != null ? m.waitMinutes + ' min' : 'not set') + '</span>' : '') +
+      (mine ? '<button class="rm" data-rm="' + esc(m.email) + '">&#10005;</button>' : '') +
+    '</div>'
+  )).join('') || '<div class="empty-state">No one has joined yet.</div>';
+
+  let html = '<div class="detail-hero">' +
+    '<div class="qname">' + esc(q.name) + '</div>' +
+    '<div class="qid" id="copyId">#' + q.queue_id + ' &#128203;</div>' +
+    '<div class="qowner">' + (mine ? 'You own this queue' : 'Owner ' + esc(q.owner)) + '</div>' +
+    '<div class="chips" style="margin-top:10px"><span class="chip type">' + q.type + '</span>' + statusChip(q) + '</div>' +
+  '</div>';
+
+  html += '<div class="detail-stats">' +
+    '<div class="stat-tile"><div class="n">' + q.total_members + '</div><div class="l">Members</div></div>' +
+    '<div class="stat-tile"><div class="n">' + (joined ? q.your_position : '—') + '</div><div class="l">Your position</div></div>' +
+  '</div>';
+
+  if (!mine && joined) {
+    html += '<div class="detail-section"><h3>Your estimated wait</h3>' +
+      '<div class="stat-tile"><div class="n">' + (q.your_wait_minutes != null ? q.your_wait_minutes : '—') + '</div>' +
+      '<div class="l">' + (q.your_wait_minutes != null ? 'minutes to the top' : 'not set by the owner yet') + '</div></div></div>';
+  }
+
+  html += '<div class="detail-section"><h3>Members</h3>' +
+    (mine && rows.length ? '<label class="select-all"><input type="checkbox" id="selectAllCb"> Select all</label>' : '') +
+    memberRows +
+    (mine && rows.length ? '<div class="wait-row"><input type="number" min="0" step="1" id="waitInput" placeholder="minutes"><button id="applyWaitBtn">Apply</button></div>' : '') +
+  '</div>';
+
+  if (mine && q.type === 'private') {
+    html += '<div class="detail-section"><h3>Invite by email</h3>' +
+      '<div class="share-row"><input type="email" id="shareInput" placeholder="name@example.com"><button id="shareBtn">Share</button></div></div>';
+  }
+
+  html += '<div class="detail-actions">';
+  if (mine) {
+    html += '<button class="primary-btn ghost" id="clearBtn">Clear all members</button>';
+    html += '<button class="danger-btn" id="deleteBtn">Delete queue</button>';
+  } else if (joined) {
+    html += '<button class="primary-btn ghost" id="withdrawBtn">Withdraw</button>';
+  } else if (!q.suspended && !q.expired) {
+    html += '<button class="primary-btn accent" id="joinBtn">Join this queue</button>';
+  }
+  html += '</div>';
+
+  document.getElementById('detailBody').innerHTML = html;
+  wireDetail(q, mine);
+}
+function wireDetail(q, mine) {
+  const copyEl = document.getElementById('copyId');
+  if (copyEl) copyEl.onclick = () => {
+    navigator.clipboard?.writeText(q.queue_id).then(() => toast('Copied #' + q.queue_id + '.'));
+  };
+  const joinBtn = document.getElementById('joinBtn');
+  if (joinBtn) joinBtn.onclick = (e) => withBusy(e.target, async () => {
+    await api('POST', '/api/queues/' + q.queue_id + '/join');
+    toast('Joined the queue.', 'ok');
+    await refreshDetail();
+  });
+  const withdrawBtn = document.getElementById('withdrawBtn');
+  if (withdrawBtn) withdrawBtn.onclick = (e) => withBusy(e.target, async () => {
+    await api('POST', '/api/queues/' + q.queue_id + '/withdraw');
+    toast('Withdrawn.', 'ok');
+    await refreshDetail();
+  });
+  const clearBtn = document.getElementById('clearBtn');
+  if (clearBtn) clearBtn.onclick = () => {
+    if (!confirm('Remove all ' + q.total_members + ' member(s) from "' + q.name + '"? This cannot be undone.')) return;
+    withBusy(clearBtn, async () => {
+      await api('DELETE', '/api/queues/' + q.queue_id + '/members');
+      toast('Members cleared.', 'ok');
+      await refreshDetail();
+    });
+  };
+  const deleteBtn = document.getElementById('deleteBtn');
+  if (deleteBtn) deleteBtn.onclick = () => {
+    if (!confirm('Delete "' + q.name + '"? This cannot be undone.')) return;
+    withBusy(deleteBtn, async () => {
+      await api('DELETE', '/api/queues/' + q.queue_id);
+      toast('Queue deleted.', 'ok');
+      showScreen('board');
+      loadBoard();
+    });
+  };
+  document.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => withBusy(b, async () => {
+    await api('DELETE', '/api/queues/' + q.queue_id + '/members/' + encodeURIComponent(b.dataset.rm));
+    toast('Member removed.', 'ok');
+    await refreshDetail();
+  }));
+  const selectAllCb = document.getElementById('selectAllCb');
+  if (selectAllCb) selectAllCb.onchange = () => {
+    document.querySelectorAll('.member-check').forEach(cb => { cb.checked = selectAllCb.checked; });
+  };
+  const applyWaitBtn = document.getElementById('applyWaitBtn');
+  if (applyWaitBtn) applyWaitBtn.onclick = () => withBusy(applyWaitBtn, async () => {
+    const emails = [...document.querySelectorAll('.member-check:checked')].map(cb => cb.dataset.email);
+    if (!emails.length) { toast('Select at least one member first.', 'err'); return; }
+    const raw = document.getElementById('waitInput').value.trim();
+    const minutes = raw === '' ? null : Number(raw);
+    await api('POST', '/api/queues/' + q.queue_id + '/members/wait-time', {emails, minutes});
+    toast('Updated wait time for ' + emails.length + (emails.length === 1 ? ' member.' : ' members.'), 'ok');
+    await refreshDetail();
+  });
+  const shareBtn = document.getElementById('shareBtn');
+  if (shareBtn) shareBtn.onclick = () => withBusy(shareBtn, async () => {
+    const email = document.getElementById('shareInput').value.trim();
+    if (!email) { toast('enter an email first', 'err'); return; }
+    await api('POST', '/api/queues/' + q.queue_id + '/share', {email});
+    toast('Shared with ' + email + '.', 'ok');
+    document.getElementById('shareInput').value = '';
+  });
+}
+
+// ---------- account ----------
+function renderAccount() {
+  document.getElementById('accountEmail').textContent = EMAIL || '';
+  document.getElementById('accountInitial').textContent = (EMAIL || '?').charAt(0).toUpperCase();
+  document.getElementById('accountRole').textContent = window.IS_ADMIN ? 'ADMIN' : 'USER';
+  syncThemeSwitch();
+}
+
+// ---------- service worker ----------
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js', {scope: '/mobile'}).catch(() => {}));
+}
+
+// ---------- boot ----------
+if (TOKEN && EMAIL) {
+  api('GET', '/api/me').then(me => enterApp(me.is_admin)).catch(() => {
+    TOKEN = null; localStorage.removeItem('rq_token');
+    showScreen('auth');
+  });
+} else {
+  showScreen('auth');
+}
+</script>
+</body>
+</html>

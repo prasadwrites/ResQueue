@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ResQueue</string>
+
+    <!-- CHANGE hostName to your real, publicly reachable HTTPS domain —
+         a TWA cannot verify against an IP address or localhost. -->
+    <string name="hostName" translatable="false">192.168.12.120</string>
+    <string name="launchUrl" translatable="false">http://192.168.12.120:8765/mobile</string>
+
+    <string name="asset_statements" translatable="false">
+        [{
+            \"relation\": [\"delegate_permission/common.handle_all_urls\"],
+            \"target\": {
+                \"namespace\": \"web\",
+                \"site\": \"http://192.168.12.120:8765\"
+            }
+        }]
+    </string>
+</resources>

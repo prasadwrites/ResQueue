@@ -1,0 +1,552 @@
+[
+  {
+    "agent": "User Agent",
+    "feature": "Account: registration",
+    "action": "Register alice@example.com with valid email",
+    "expected": "201 account created, verification code emailed",
+    "observed": "HTTP 201: {\"email\": \"alice@example.com\", \"message\": \"account created; a verification code has been emailed to you\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:39.680628+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Account: registration",
+    "action": "Register with invalid email 'not-an-email'",
+    "expected": "400 rejected",
+    "observed": "HTTP 400: {\"error\": \"a valid email address is required\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:39.696313+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Account: registration",
+    "action": "Register with 5-char password",
+    "expected": "400 rejected (min 8 chars)",
+    "observed": "HTTP 400: {\"error\": \"password must be at least 8 characters\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:39.710929+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Account: registration",
+    "action": "Register duplicate email alice@example.com",
+    "expected": "409 conflict",
+    "observed": "HTTP 409: {\"error\": \"an account with this email already exists\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:39.727023+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Account: verification",
+    "action": "Receive verification code via simulated outbox",
+    "expected": "6-digit code delivered to alice's inbox",
+    "observed": "code received: 669055",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:39.742621+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Account: verification",
+    "action": "Login BEFORE verifying email",
+    "expected": "403 email not verified",
+    "observed": "HTTP 403: {\"error\": \"email not verified\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:39.896740+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Account: verification",
+    "action": "Verify with WRONG code",
+    "expected": "400 invalid code",
+    "observed": "HTTP 400: {\"error\": \"invalid verification code\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:39.911344+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Account: verification",
+    "action": "Verify with correct code",
+    "expected": "200 email verified",
+    "observed": "HTTP 200: {\"message\": \"email verified; you can now log in\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:39.936539+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Account: login",
+    "action": "Login with wrong password",
+    "expected": "401 invalid credentials",
+    "observed": "HTTP 401: {\"error\": \"invalid email or password\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:40.117085+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Account: login",
+    "action": "Login with correct email + password",
+    "expected": "200 with session token",
+    "observed": "HTTP 200: {\"email\": \"alice@example.com\", \"is_admin\": false, \"token\": \"826fc452d728e3995417b6360e2f6de02acdd33fcbd5221a\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:40.281738+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Account: provisioning",
+    "action": "Onboard bob and carol via full signup flow",
+    "expected": "both logged in with tokens",
+    "observed": "bob token: True, carol token: True",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.064488+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: creation",
+    "action": "Create public queue with name + expiry",
+    "expected": "201; unique 10-digit queue id assigned",
+    "observed": "HTTP 201: {\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"member_details\": [], \"members\": [], \"name\": \"Alice Public Deli\", \"owner\": \"alice@example.com\", \"queue_id\": \"3107264878\", \"suspended\": false, \"total_members\": 0, \"type\": \"public\", \"your_positio",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.092629+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: creation",
+    "action": "Create private queue",
+    "expected": "201 with type=private",
+    "observed": "HTTP 201: {\"created_at\": \"2026-08-17T17:33:41.112810+00:00\", \"expired\": false, \"expiry_date\": null, \"member_details\": [], \"members\": [], \"name\": \"Alice Private Club\", \"owner\": \"alice@example.com\", \"queue_id\": \"2749893729\", \"suspended\": false, \"total_members\": 0, \"type\": \"private\", \"your_position\": null, \"your",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.124273+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: creation",
+    "action": "Create queue with empty name",
+    "expected": "400 name required",
+    "observed": "HTTP 400: {\"error\": \"queue name is required\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.145052+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: creation",
+    "action": "Create queue with malformed expiry date",
+    "expected": "400 invalid expiry",
+    "observed": "HTTP 400: {\"error\": \"expiry_date must be an ISO date/datetime, e.g. 2026-12-31T00:00:00\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.161029+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: reference handle",
+    "action": "Create a queue named '>Handle Test'",
+    "expected": "201; leading '>' stripped, stored name is 'Handle Test'",
+    "observed": "HTTP 201: {\"created_at\": \"2026-08-17T17:33:41.164415+00:00\", \"expired\": false, \"expiry_date\": null, \"member_details\": [], \"members\": [], \"name\": \"Handle Test\", \"owner\": \"alice@example.com\", \"queue_id\": \"1190747630\", \"suspended\": false, \"total_members\": 0, \"type\": \"public\", \"your_position\": null, \"your_wait_mi",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.175906+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: default view",
+    "action": "Bob's default board right after Alice creates two queues",
+    "expected": "empty \u2014 nothing created, joined, or invited yet",
+    "observed": "HTTP 200: {\"created_by_me\": [], \"invited\": [], \"joined_by_me\": []}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.180502+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: search",
+    "action": "Bob searches by Alice's public queue's 10-digit ID",
+    "expected": "200, exact match found",
+    "observed": "HTTP 200: [{\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"members\": [], \"name\": \"Alice Public Deli\", \"owner\": \"alice@example.com\", \"queue_id\": \"3107264878\", \"suspended\": false, \"total_members\": 0, \"type\": \"public\", \"your_position\": null, \"your_wait_",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.184994+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: search",
+    "action": "Bob searches by a substring of the public queue's name",
+    "expected": "200, match found",
+    "observed": "HTTP 200: [{\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"members\": [], \"name\": \"Alice Public Deli\", \"owner\": \"alice@example.com\", \"queue_id\": \"3107264878\", \"suspended\": false, \"total_members\": 0, \"type\": \"public\", \"your_position\": null, \"your_wait_",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.191961+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: search",
+    "action": "Bob searches by owner email alice@example.com",
+    "expected": "200, finds her public queue (only)",
+    "observed": "HTTP 200: [{\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"members\": [], \"name\": \"Alice Public Deli\", \"owner\": \"alice@example.com\", \"queue_id\": \"3107264878\", \"suspended\": false, \"total_members\": 0, \"type\": \"public\", \"your_position\": null, \"your_wait_",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.196493+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: search",
+    "action": "Bob searches by the PRIVATE queue's ID before being invited",
+    "expected": "200, empty \u2014 not discoverable",
+    "observed": "HTTP 200: []",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.200932+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: search",
+    "action": "Bob searches by the PRIVATE queue's name",
+    "expected": "200, empty \u2014 name search only covers public queues",
+    "observed": "HTTP 200: []",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.207440+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: reference handle",
+    "action": "Bob searches using the '>Handle Test' reference form",
+    "expected": "200, finds the queue by name after stripping '>'",
+    "observed": "HTTP 200: [{\"created_at\": \"2026-08-17T17:33:41.164415+00:00\", \"expired\": false, \"expiry_date\": null, \"members\": [], \"name\": \"Handle Test\", \"owner\": \"alice@example.com\", \"queue_id\": \"1190747630\", \"suspended\": false, \"total_members\": 0, \"type\": \"public\", \"your_position\": null, \"your_wait_minutes\": null}]",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.221868+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: reference handle",
+    "action": "Bob searches '>' + the public queue's numeric ID",
+    "expected": "200, empty \u2014 '>' forces a name lookup, bypassing ID auto-detection",
+    "observed": "HTTP 200: []",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.227889+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: visibility",
+    "action": "Carol (uninvited) inspects private queue directly by ID",
+    "expected": "404 not found (existence hidden)",
+    "observed": "HTTP 404: {\"error\": \"queue not found\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.233180+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: visibility",
+    "action": "Carol (uninvited) tries to JOIN private queue",
+    "expected": "404 rejected",
+    "observed": "HTTP 404: {\"error\": \"queue not found\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.253638+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: sharing",
+    "action": "Alice explicitly invites bob (by email) to the private queue",
+    "expected": "200 shared (notification emailed)",
+    "observed": "HTTP 200: {\"message\": \"queue 2749893729 shared with bob@example.com\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.269716+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: sharing",
+    "action": "Carol (non-owner) tries to share Alice's private queue",
+    "expected": "403/404 rejected",
+    "observed": "HTTP 403: {\"error\": \"only the queue owner can share this queue\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.284018+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: sharing",
+    "action": "Bob inspects private queue AFTER being invited",
+    "expected": "200 queue visible",
+    "observed": "HTTP 200: {\"created_at\": \"2026-08-17T17:33:41.112810+00:00\", \"expired\": false, \"expiry_date\": null, \"members\": [], \"name\": \"Alice Private Club\", \"owner\": \"alice@example.com\", \"queue_id\": \"2749893729\", \"suspended\": false, \"total_members\": 0, \"type\": \"private\", \"your_position\": null, \"your_wait_minutes\": null}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.299357+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: default view",
+    "action": "Bob's default board after the invite, before joining",
+    "expected": "private queue appears under 'invited', not 'joined'",
+    "observed": "invited: ['2749893729']",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.315045+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: participation",
+    "action": "Bob joins public queue",
+    "expected": "201 joined at position 1",
+    "observed": "HTTP 201: {\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"members\": [\"bob@example.com\"], \"name\": \"Alice Public Deli\", \"owner\": \"alice@example.com\", \"queue_id\": \"3107264878\", \"suspended\": false, \"total_members\": 1, \"type\": \"public\", \"your_position\": 1",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.340905+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: participation",
+    "action": "Bob joins the SAME queue again",
+    "expected": "409 already a member",
+    "observed": "HTTP 409: {\"error\": \"already a member of this queue\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.361184+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: participation",
+    "action": "Bob joins private queue after invite",
+    "expected": "201 joined",
+    "observed": "HTTP 201: {\"created_at\": \"2026-08-17T17:33:41.112810+00:00\", \"expired\": false, \"expiry_date\": null, \"members\": [\"bob@example.com\"], \"name\": \"Alice Private Club\", \"owner\": \"alice@example.com\", \"queue_id\": \"2749893729\", \"suspended\": false, \"total_members\": 1, \"type\": \"private\", \"your_position\": 1, \"your_wait_mi",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.374895+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: participation",
+    "action": "Carol checks her position, member count and owner",
+    "expected": "position 2 of 2 members, owner alice",
+    "observed": "HTTP 200: {\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"members\": [\"bob@example.com\", \"carol@example.com\"], \"name\": \"Alice Public Deli\", \"owner\": \"alice@example.com\", \"queue_id\": \"3107264878\", \"suspended\": false, \"total_members\": 2, \"type\": \"public",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.423163+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: participation",
+    "action": "Bob lists queues he has JOINED",
+    "expected": "both queues in joined_by_me",
+    "observed": "joined: ['3107264878', '2749893729']",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.437842+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: ownership",
+    "action": "Alice lists queues she CREATED",
+    "expected": "both queues in created_by_me",
+    "observed": "created: ['3107264878', '2749893729', '1190747630']",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.443133+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: wait time",
+    "action": "Bob (non-owner) tries to set his own wait time",
+    "expected": "403 owner only",
+    "observed": "HTTP 403: {\"error\": \"only the queue owner can set wait times\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.468471+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: wait time",
+    "action": "Alice targets an email that never joined the queue",
+    "expected": "400 rejected \u2014 not a member",
+    "observed": "HTTP 400: {\"error\": \"not members of this queue: nobody@example.com\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.483785+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: wait time",
+    "action": "Alice sets bob's personal wait time to 10 minutes",
+    "expected": "200, bob's member_details shows 10",
+    "observed": "HTTP 200: {\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"member_details\": [{\"email\": \"bob@example.com\", \"joined_at\": \"2026-08-17T17:33:41.328857+00:00\", \"wait_minutes\": 10}, {\"email\": \"carol@example.com\", \"joined_at\": \"2026-08-17T17:33:41.391080+00:",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.509171+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: wait time",
+    "action": "Alice sets carol's personal wait time to 25 (different from bob's)",
+    "expected": "200, bob stays 10, carol becomes 25 \u2014 proves per-member times differ",
+    "observed": "HTTP 200: {\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"member_details\": [{\"email\": \"bob@example.com\", \"joined_at\": \"2026-08-17T17:33:41.328857+00:00\", \"wait_minutes\": 10}, {\"email\": \"carol@example.com\", \"joined_at\": \"2026-08-17T17:33:41.391080+00:",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.540934+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: wait time",
+    "action": "Bob (joinee) sees only HIS OWN quoted time",
+    "expected": "200, your_wait_minutes == 10, no roster leaked",
+    "observed": "HTTP 200: {\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"members\": [\"bob@example.com\", \"carol@example.com\"], \"name\": \"Alice Public Deli\", \"owner\": \"alice@example.com\", \"queue_id\": \"3107264878\", \"suspended\": false, \"total_members\": 2, \"type\": \"public",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.561854+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: wait time",
+    "action": "Carol (joinee) sees her own quoted time, distinct from bob's",
+    "expected": "200, your_wait_minutes == 25",
+    "observed": "HTTP 200: {\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"members\": [\"bob@example.com\", \"carol@example.com\"], \"name\": \"Alice Public Deli\", \"owner\": \"alice@example.com\", \"queue_id\": \"3107264878\", \"suspended\": false, \"total_members\": 2, \"type\": \"public",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.577779+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: wait time",
+    "action": "Alice tries a negative wait time for a selected group",
+    "expected": "400 rejected",
+    "observed": "HTTP 400: {\"error\": \"minutes must be zero or greater\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.581535+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: wait time",
+    "action": "Alice selects BOTH members and clears their wait time in one group edit",
+    "expected": "200, both cleared back to null",
+    "observed": "HTTP 200: {\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"member_details\": [{\"email\": \"bob@example.com\", \"joined_at\": \"2026-08-17T17:33:41.328857+00:00\", \"wait_minutes\": null}, {\"email\": \"carol@example.com\", \"joined_at\": \"2026-08-17T17:33:41.391080+0",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.594755+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: roster",
+    "action": "Alice (owner) lists accounts who joined her queue",
+    "expected": "200, member_details includes bob + carol with join timestamps",
+    "observed": "HTTP 200: {\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"member_details\": [{\"email\": \"bob@example.com\", \"joined_at\": \"2026-08-17T17:33:41.328857+00:00\", \"wait_minutes\": null}, {\"email\": \"carol@example.com\", \"joined_at\": \"2026-08-17T17:33:41.391080+0",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.624307+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: roster",
+    "action": "Bob (non-owner member) does NOT get the owner-only roster detail",
+    "expected": "200, no member_details field for a non-owner",
+    "observed": "HTTP 200: {\"created_at\": \"2026-08-17T17:33:41.081388+00:00\", \"expired\": false, \"expiry_date\": \"2027-01-01T00:00:00\", \"members\": [\"bob@example.com\", \"carol@example.com\"], \"name\": \"Alice Public Deli\", \"owner\": \"alice@example.com\", \"queue_id\": \"3107264878\", \"suspended\": false, \"total_members\": 2, \"type\": \"public",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.628145+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: moderation",
+    "action": "Carol (non-owner) tries to remove bob",
+    "expected": "403 owner only",
+    "observed": "HTTP 403: {\"error\": \"only the queue owner can remove members\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.654181+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: moderation",
+    "action": "Alice (owner) removes carol from her queue",
+    "expected": "200 removed",
+    "observed": "HTTP 200: {\"message\": \"removed carol@example.com from queue 3107264878\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.668296+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: participation",
+    "action": "Bob withdraws himself from private queue",
+    "expected": "200 withdrawn",
+    "observed": "HTTP 200: {\"message\": \"withdrawn from queue 2749893729\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.681258+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: participation",
+    "action": "Bob withdraws again (not a member)",
+    "expected": "404 not a member",
+    "observed": "HTTP 404: {\"error\": \"you are not a member of this queue\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.685765+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: expiry",
+    "action": "Bob joins a queue whose expiry date has passed",
+    "expected": "403 queue expired",
+    "observed": "HTTP 403: {\"error\": \"queue has expired\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.717003+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: deletion",
+    "action": "Bob (non-owner) tries to delete Alice's queue",
+    "expected": "403 owner only",
+    "observed": "HTTP 403: {\"error\": \"only the queue owner can delete this queue\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.732945+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: deletion",
+    "action": "Alice deletes her own queue",
+    "expected": "200 deleted",
+    "observed": "HTTP 200: {\"message\": \"queue 5860815295 deleted\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.747492+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Queue: deletion",
+    "action": "Inspect deleted queue",
+    "expected": "404 gone",
+    "observed": "HTTP 404: {\"error\": \"queue not found\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.752948+00:00"
+  },
+  {
+    "agent": "User Agent",
+    "feature": "Security",
+    "action": "List queues with NO auth token",
+    "expected": "401 authentication required",
+    "observed": "HTTP 401: {\"error\": \"authentication required (missing/invalid token, or account suspended/deleted)\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:41.758183+00:00"
+  }
+]

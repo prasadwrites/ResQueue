@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ResQueue — Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --paper:#F5F7FA; --card:#FFFFFF; --ink:#101820; --muted:#5A6779; --line:#E1E7EE;
+  --accent:#2E6690; --accent-ink:#FFFFFF; --accent-soft:#E4EEF6;
+  --ok:#2F9E6E; --ok-soft:#E3F3EB;
+  --warn:#B87519; --warn-soft:#F8ECD9;
+  --danger:#C7484A; --danger-soft:#FAE6E6;
+  --shadow:0 1px 2px rgba(16,24,32,.05),0 10px 26px -14px rgba(16,24,32,.28);
+  --display:"Segoe UI Semibold","Segoe UI",system-ui,sans-serif;
+  --body:"Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"Cascadia Code",ui-monospace,Consolas,monospace;
+}
+:root[data-theme="dark"]{
+  --paper:#0B0F14; --card:#131922; --ink:#DCE4EC; --muted:#7C8CA0; --line:#202B38;
+  --accent:#5FA3DB; --accent-ink:#071018; --accent-soft:#152332;
+  --ok:#57C79A; --ok-soft:#0F281F;
+  --warn:#E0A749; --warn-soft:#2E2312;
+  --danger:#E5686A; --danger-soft:#301616;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 30px -16px rgba(0,0,0,.65);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0B0F14; --card:#131922; --ink:#DCE4EC; --muted:#7C8CA0; --line:#202B38;
+    --accent:#5FA3DB; --accent-ink:#071018; --accent-soft:#152332;
+    --ok:#57C79A; --ok-soft:#0F281F;
+    --warn:#E0A749; --warn-soft:#2E2312;
+    --danger:#E5686A; --danger-soft:#301616;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 30px -16px rgba(0,0,0,.65);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font:14px/1.5 var(--body);min-height:100vh}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+button{font:inherit;cursor:pointer}
+input{font:inherit}
+@media (max-width: 480px){
+  input{font-size:16px} /* prevents iOS Safari auto-zoom on focus */
+}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+.console{max-width:1080px;margin:0 auto;padding:0 20px 64px}
+
+.console-header{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:20px 0 16px;border-bottom:1px solid var(--line);margin-bottom:26px}
+.brand{display:flex;align-items:center;gap:10px;flex:0 1 auto;min-width:0}
+.brand .mark{
+  font:700 13px/1 var(--mono);letter-spacing:.08em;background:var(--accent);color:var(--accent-ink);
+  padding:6px 8px;border-radius:4px;flex:0 0 auto}
+.brand h1{font:600 18px/1 var(--display);letter-spacing:.01em;margin:0}
+.brand .tag{
+  font:600 10px/1 var(--mono);letter-spacing:.1em;color:var(--muted);text-transform:uppercase;
+  border:1px solid var(--line);padding:4px 7px;border-radius:4px;margin-left:4px}
+.header-actions{display:flex;align-items:center;gap:10px;flex:0 1 auto;min-width:0}
+.theme-btn{
+  width:32px;height:32px;border-radius:7px;border:1px solid var(--line);background:var(--card);
+  color:var(--muted);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.session-chip{
+  display:none;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
+  border-radius:8px;padding:6px 8px 6px 12px;font-size:12.5px;min-width:0}
+.session-chip.show{display:flex}
+.session-chip .who{font:600 12.5px var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+@media (max-width: 480px){
+  .console-header{flex-wrap:wrap;row-gap:12px}
+  .brand .tag{display:none}
+  .session-chip .who{max-width:32vw}
+}
+.logout-btn{border:0;background:transparent;color:var(--muted);width:24px;height:24px;border-radius:6px}
+.logout-btn:hover{background:var(--danger-soft);color:var(--danger)}
+
+/* ---- login ---- */
+.login-panel{max-width:380px;margin:56px auto 0}
+.login-card{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
+  padding:26px 24px}
+.login-card h2{margin:0 0 4px;font:600 17px var(--display)}
+.login-card p.sub{margin:0 0 18px;color:var(--muted);font-size:13px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font:600 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.field input{padding:9px 11px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink)}
+.field input:focus{border-color:var(--accent)}
+.primary-btn{
+  width:100%;padding:10px;border:0;border-radius:7px;background:var(--accent);color:var(--accent-ink);
+  font-weight:600;font-size:13.5px}
+.primary-btn:disabled{opacity:.55;cursor:not-allowed}
+
+/* ---- dashboard ---- */
+.hidden{display:none!important}
+.stat-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:22px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;box-shadow:var(--shadow)}
+.stat .n{font:700 22px var(--mono);font-variant-numeric:tabular-nums}
+.stat .l{font:600 10px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.stat.danger .n{color:var(--danger)}
+.stat.warn .n{color:var(--warn)}
+.stat.ok .n{color:var(--ok)}
+
+.panel{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
+  margin-bottom:20px;overflow:hidden}
+.panel-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 16px;border-bottom:1px solid var(--line)}
+.panel-head h2{margin:0;font:600 14.5px var(--display);letter-spacing:.02em}
+.panel-head .search{
+  padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:var(--paper);
+  color:var(--ink);font-size:12.5px;width:200px}
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{
+  font:600 10.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
+  text-align:left;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tr:hover td{background:var(--accent-soft)}
+.mono{font:12.5px var(--mono);color:var(--muted)}
+.chip{
+  font:600 10px/1 var(--mono);letter-spacing:.05em;text-transform:uppercase;padding:4px 7px;border-radius:5px;
+  display:inline-block}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.danger{background:var(--danger-soft);color:var(--danger)}
+.chip.neutral{background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+.chip-row{display:flex;gap:5px;flex-wrap:wrap}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.mini-btn{
+  padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--paper);
+  color:var(--ink);font:600 11.5px var(--body)}
+.mini-btn:hover{border-color:var(--accent)}
+.mini-btn.danger{color:var(--danger);border-color:var(--danger-soft)}
+.mini-btn.danger:hover{background:var(--danger-soft);border-color:var(--danger)}
+.mini-btn:disabled{opacity:.4;cursor:not-allowed}
+.empty-row td{text-align:center;color:var(--muted);padding:28px;font-size:13px}
+.you-tag{font:600 9.5px var(--mono);color:var(--accent);margin-left:6px}
+
+.toasts{position:fixed;top:16px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:50;width:min(320px,90vw)}
+.toast{
+  background:var(--ink);color:var(--paper);padding:11px 14px;border-radius:8px;font-size:13px;
+  box-shadow:var(--shadow);animation:toast-in .18s ease-out}
+.toast.err{background:var(--danger)}
+.toast.ok{background:var(--ok)}
+@keyframes toast-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="console">
+  <header class="console-header">
+    <div class="brand">
+      <span class="mark">RQ</span>
+      <h1>ResQueue</h1>
+      <span class="tag">Admin console</span>
+    </div>
+    <div class="header-actions">
+      <div class="session-chip" id="sessionChip">
+        <span class="who" id="whoEmail"></span>
+        <button class="logout-btn" id="logoutBtn" title="Log out">&#10005;</button>
+      </div>
+      <button class="theme-btn" id="themeBtn" title="Toggle theme">&#9789;</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="login-panel" id="loginPanel">
+      <div class="login-card">
+        <h2>Administrator sign-in</h2>
+        <p class="sub">Requires an account with admin privilege.</p>
+        <div class="field"><label>Email</label><input id="aEmail" type="email" placeholder="admin@resqueue.local" autocomplete="username"></div>
+        <div class="field"><label>Password</label><input id="aPassword" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+        <button class="primary-btn" id="loginBtn">Sign in</button>
+      </div>
+    </section>
+
+    <section class="hidden" id="dashboard">
+      <div class="stat-strip" id="statStrip"></div>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Users</h2>
+          <input class="search" id="userSearch" placeholder="Filter by email…">
+        </div>
+        <div class="tblwrap">
+          <table>
+            <thead><tr><th>Email</th><th>Status</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Queues</h2>
+          <input class="search" id="queueSearch" placeholder="Filter by name or ID…">
+        </div>
+        <div class="tblwrap">
+          <table>
+            <thead><tr><th>Queue</th><th>Owner</th><th>Type</th><th>Status</th><th>Members</th><th>Actions</th></tr></thead>
+            <tbody id="queuesBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+let TOKEN = localStorage.getItem('rq_admin_token');
+let EMAIL = localStorage.getItem('rq_admin_email');
+let users = [], queues = [];
+
+const root = document.documentElement;
+const savedTheme = localStorage.getItem('rq_theme');
+root.setAttribute('data-theme', savedTheme || 'dark'); // dark by default until the user picks light
+document.getElementById('themeBtn').onclick = () => {
+  const cur = root.getAttribute('data-theme') || 'dark';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  localStorage.setItem('rq_theme', next);
+};
+
+function toast(message, kind) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (kind ? ' ' + kind : '');
+  el.textContent = message;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3800);
+}
+
+async function api(method, path, body) {
+  const headers = {'Content-Type': 'application/json'};
+  if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
+  const r = await fetch(path, {method, headers, body: body ? JSON.stringify(body) : undefined});
+  let data = {};
+  try { data = await r.json(); } catch (_) {}
+  if (!r.ok) throw new Error(data.error || ('request failed (' + r.status + ')'));
+  return data;
+}
+
+document.getElementById('loginBtn').onclick = async (e) => {
+  const btn = e.target;
+  const email = document.getElementById('aEmail').value.trim();
+  const password = document.getElementById('aPassword').value;
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const data = await api('POST', '/api/login', {email, password});
+    if (!data.is_admin) throw new Error('this account does not have admin privilege');
+    TOKEN = data.token; EMAIL = data.email;
+    localStorage.setItem('rq_admin_token', TOKEN);
+    localStorage.setItem('rq_admin_email', EMAIL);
+    toast('Signed in as ' + EMAIL + '.', 'ok');
+    enterConsole();
+  } catch (err) { toast(err.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Sign in'; }
+};
+
+document.getElementById('logoutBtn').onclick = () => {
+  TOKEN = null; EMAIL = null;
+  localStorage.removeItem('rq_admin_token'); localStorage.removeItem('rq_admin_email');
+  document.getElementById('sessionChip').classList.remove('show');
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('loginPanel').classList.remove('hidden');
+  toast('Signed out.');
+};
+
+function enterConsole() {
+  document.getElementById('loginPanel').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('whoEmail').textContent = EMAIL;
+  document.getElementById('sessionChip').classList.add('show');
+  loadAll();
+}
+
+async function loadAll() {
+  try {
+    [users, queues] = await Promise.all([
+      api('GET', '/api/admin/users'),
+      api('GET', '/api/admin/queues'),
+    ]);
+    renderStats(); renderUsers(); renderQueues();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+function renderStats() {
+  const suspendedUsers = users.filter(u => u.suspended).length;
+  const suspendedQueues = queues.filter(q => q.suspended).length;
+  const expiredQueues = queues.filter(q => q.expired).length;
+  const stats = [
+    ['Users', users.length, ''],
+    ['Suspended users', suspendedUsers, suspendedUsers ? 'warn' : 'ok'],
+    ['Queues', queues.length, ''],
+    ['Suspended queues', suspendedQueues, suspendedQueues ? 'warn' : 'ok'],
+    ['Expired queues', expiredQueues, expiredQueues ? 'danger' : 'ok'],
+  ];
+  document.getElementById('statStrip').innerHTML = stats.map(([label, n, cls]) =>
+    '<div class="stat ' + cls + '"><div class="n">' + n + '</div><div class="l">' + label + '</div></div>').join('');
+}
+
+function renderUsers() {
+  const q = document.getElementById('userSearch').value.trim().toLowerCase();
+  const rows = users.filter(u => u.email.includes(q));
+  const body = document.getElementById('usersBody');
+  if (!rows.length) { body.innerHTML = '<tr class="empty-row"><td colspan="5">No matching accounts.</td></tr>'; return; }
+  body.innerHTML = rows.map(u => {
+    const statusChips =
+      (u.suspended ? '<span class="chip danger">Suspended</span>' : '<span class="chip ok">Active</span>') +
+      (u.verified ? '' : ' <span class="chip neutral">Unverified</span>');
+    const isSelf = u.email === EMAIL;
+    return '<tr>' +
+      '<td class="mono">' + esc(u.email) + (isSelf ? '<span class="you-tag">YOU</span>' : '') + '</td>' +
+      '<td><div class="chip-row">' + statusChips + '</div></td>' +
+      '<td>' + (u.is_admin ? '<span class="chip warn">Admin</span>' : '<span class="chip neutral">User</span>') + '</td>' +
+      '<td class="mono">' + new Date(u.created_at).toLocaleDateString() + '</td>' +
+      '<td><div class="row-actions">' +
+        (isSelf ? '' :
+          (u.suspended
+            ? '<button class="mini-btn" data-user-act="restore" data-email="' + esc(u.email) + '">Restore</button>'
+            : '<button class="mini-btn" data-user-act="suspend" data-email="' + esc(u.email) + '">Suspend</button>') +
+          '<button class="mini-btn danger" data-user-act="delete" data-email="' + esc(u.email) + '">Delete</button>') +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+  body.querySelectorAll('[data-user-act]').forEach(btn => btn.onclick = () => userAction(btn));
+}
+
+async function userAction(btn) {
+  const act = btn.dataset.userAct, email = btn.dataset.email;
+  if (act === 'delete' && !confirm('Permanently delete ' + email + '? This removes their queues and sessions too.')) return;
+  btn.disabled = true;
+  try {
+    if (act === 'suspend') await api('POST', '/api/admin/users/' + encodeURIComponent(email) + '/suspend');
+    if (act === 'restore') await api('POST', '/api/admin/users/' + encodeURIComponent(email) + '/restore');
+    if (act === 'delete') await api('DELETE', '/api/admin/users/' + encodeURIComponent(email));
+    toast(email + ' — ' + act + 'd.', 'ok');
+    loadAll();
+  } catch (e) { toast(e.message, 'err'); btn.disabled = false; }
+}
+
+function renderQueues() {
+  const q = document.getElementById('queueSearch').value.trim().toLowerCase();
+  const rows = queues.filter(x => x.name.toLowerCase().includes(q) || x.queue_id.includes(q));
+  const body = document.getElementById('queuesBody');
+  if (!rows.length) { body.innerHTML = '<tr class="empty-row"><td colspan="6">No matching queues.</td></tr>'; return; }
+  body.innerHTML = rows.map(x => {
+    const status = x.suspended ? '<span class="chip danger">Suspended</span>'
+      : x.expired ? '<span class="chip warn">Expired</span>' : '<span class="chip ok">Open</span>';
+    return '<tr>' +
+      '<td><div>' + esc(x.name) + '</div><div class="mono">#' + x.queue_id + '</div></td>' +
+      '<td class="mono">' + esc(x.owner) + '</td>' +
+      '<td><span class="chip neutral">' + x.type + '</span></td>' +
+      '<td>' + status + '</td>' +
+      '<td class="mono">' + x.total_members + '</td>' +
+      '<td><div class="row-actions">' +
+        (x.suspended
+          ? '<button class="mini-btn" data-q-act="restore" data-qid="' + x.queue_id + '">Restore</button>'
+          : '<button class="mini-btn" data-q-act="suspend" data-qid="' + x.queue_id + '">Suspend</button>') +
+        '<button class="mini-btn danger" data-q-act="delete" data-qid="' + x.queue_id + '">Delete</button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+  body.querySelectorAll('[data-q-act]').forEach(btn => btn.onclick = () => queueAction(btn));
+}
+
+async function queueAction(btn) {
+  const act = btn.dataset.qAct, qid = btn.dataset.qid;
+  if (act === 'delete' && !confirm('Permanently delete queue #' + qid + '?')) return;
+  btn.disabled = true;
+  try {
+    if (act === 'suspend') await api('POST', '/api/admin/queues/' + qid + '/suspend');
+    if (act === 'restore') await api('POST', '/api/admin/queues/' + qid + '/restore');
+    if (act === 'delete') await api('DELETE', '/api/queues/' + qid);
+    toast('Queue #' + qid + ' — ' + act + 'd.', 'ok');
+    loadAll();
+  } catch (e) { toast(e.message, 'err'); btn.disabled = false; }
+}
+
+document.getElementById('userSearch').oninput = renderUsers;
+document.getElementById('queueSearch').oninput = renderQueues;
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+if (TOKEN && EMAIL) {
+  api('GET', '/api/me').then(me => {
+    if (!me.is_admin) throw new Error('not admin');
+    enterConsole();
+  }).catch(() => {
+    TOKEN = null; localStorage.removeItem('rq_admin_token');
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+You are a programmer. You are developing a client server queue management system, called ResQueue. The queue management server has a web interface for admin and users to login and operate on the queue and view on the queue. 
+
+
+Server Functionalities are listed below  :  
+
+
+1) Account Management : Anyone with a valid email id can create an account. While signing up one need to provide their email id to which a code is send to verify the email. 
+The client can login only by authenticating using the email and password provided by client during the account registration process
+
+
+2) Queue Management :  
+
+	2.1) Queue creation/deletion: A client who has registered can create a queue, delete the queue account owner created. While creating a queue account owner can set an expiry date for the queue. Every queue has a queue name and 10 digit number which is unique to the queue
+        2.2) Queue Item deletion : An account owner of the queue can delete  all items or a single item. A client who had joined the queue can only withdraw his item from the queue. 
+
+
+
+3) Queue types : The queues can be private and  public. If its public its visible to all the clients who have a registered account on the server. If its private it will be visible only to those client's  who the queues owner account had shared the queue with 
+
+4) Server Admin account : A admin can login to the server and will have the highest privilege. He can delete an account, suspend an account , suspend a queue owned by a user etc.
+
+5) A user after login has the option to create a queue, see his queue, persons who had joined the queue, his position in the queue. If the queue is created by the user , then he had additional queue management access like deleting a queue, removing a person from the queue etc. 
+
+
+Create three Agents .
+
+Admin Agent tests all the Admin features
+User Agent tests all the User features
+Reporter Agent reports all the features tested
+
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+Here’s a clean, production‑ready **prompt** you can use to instruct an LLM or automation system to generate and coordinate your three agents (Admin, User, Reporter) for ResQueue.  
+I’ve written it so it’s structured, explicit, and covers every feature you described.
+
+---
+
+## **ResQueue Multi‑Agent System Prompt**
+
+### **System Overview**
+You are a team of three coordinated agents responsible for testing and reporting on the ResQueue client–server queue management system.  
+ResQueue is a web‑based queue management platform that supports account creation, login, queue creation, queue participation, queue visibility rules, and admin‑level moderation.
+
+Your job is to **simulate**, **validate**, and **report** all system behaviors using three specialized agents:
+
+---
+
+## **Agent 1 — Admin Agent**
+**Role:** Test and validate all administrative functionalities.  
+**Responsibilities:**
+
+1. **Account Control**
+   - Delete user accounts  
+   - Suspend user accounts  
+   - Restore accounts (if applicable)
+
+2. **Queue Control**
+   - Suspend queues created by users  
+   - Inspect any queue (public or private)  
+   - Validate admin‑level visibility and access
+
+3. **Security & Permissions**
+   - Ensure admin privileges override all user restrictions  
+   - Confirm that admin actions propagate correctly across the system
+
+**Output Format:**  
+Produce a structured list of admin tests performed, expected behavior, and observed behavior.
+
+---
+
+## **Agent 2 — User Agent**
+**Role:** Test all user‑level functionalities.  
+**Responsibilities:**
+
+### **1. Account Management**
+- Create an account using a valid email  
+- Receive verification code  
+- Verify email  
+- Login using email + password  
+- Attempt invalid logins to test error handling
+
+### **2. Queue Management**
+- Create a queue with:
+  - Queue name  
+  - Unique 10‑digit queue ID  
+  - Optional expiry date  
+- Delete queues they own  
+- View queues they created  
+- View queues they joined  
+- Remove users from queues they own  
+- Withdraw themselves from queues they joined
+
+### **3. Queue Types**
+- Create **public** queues (visible to all registered users)  
+- Create **private** queues (visible only to shared users)  
+- Share private queues with selected users  
+- Validate visibility rules
+
+### **4. Queue Participation**
+- Join public queues  
+- Join private queues when invited  
+- Check:
+  - Their position in the queue  
+  - Total queue members  
+  - Queue owner identity
+
+**Output Format:**  
+Produce a detailed log of user actions, expected results, and actual results.
+
+---
+
+## **Agent 3 — Reporter Agent**
+**Role:** Summarize and consolidate all tests performed by Admin Agent and User Agent.  
+**Responsibilities:**
+
+- Collect all test logs  
+- Identify passed vs failed behaviors  
+- Highlight inconsistencies or bugs  
+- Provide a final structured report containing:
+  - Feature tested  
+  - Agent responsible  
+  - Expected behavior  
+  - Actual behavior  
+  - Pass/Fail  
+  - Notes or recommendations
+
+**Output Format:**  
+A clean, human‑readable final report.
+
+---
+
+## **Execution Rules**
+1. All three agents operate independently but share results with the Reporter Agent.  
+2. Admin Agent and User Agent must simulate realistic workflows and edge cases.  
+3. Reporter Agent must not invent results — only summarize what the other agents produce.  
+4. All outputs must be structured, clear, and actionable.
+
+---
+
+## **Final Instruction**
+Begin by initializing all three agents.  
+Then execute all tests in parallel.  
+Finally, produce a consolidated report through the Reporter Agent.
+
+---
+
+If you want, I can also generate:
+
+- A **more concise version**  
+- A **more formal version**  
+- A **version formatted for LangChain / AutoGen / CrewAI**  
+- A **version with JSON schemas for agent outputs**
+
+Just tell me which style you prefer.

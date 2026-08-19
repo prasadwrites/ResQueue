@@ -1,0 +1,202 @@
+[
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: authentication",
+    "action": "Login with seeded admin account",
+    "expected": "200, is_admin=true",
+    "observed": "HTTP 200: {\"email\": \"admin@resqueue.local\", \"is_admin\": true, \"token\": \"c624cadf06a3bdc34d9ce5fad10829bb008b1ffbbbd19d5d\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:42.430679+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Setup",
+    "action": "Provision victim + mallory accounts and their queues",
+    "expected": "two users, one private + one public queue",
+    "observed": "victim queue 8617107586, mallory queue 2521990906",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.292014+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: visibility",
+    "action": "List ALL user accounts",
+    "expected": "every registered account visible",
+    "observed": "6 accounts incl. victim/mallory: True",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.313175+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: visibility",
+    "action": "Inspect victim's PRIVATE queue (never shared with admin)",
+    "expected": "200 \u2014 admin sees any queue",
+    "observed": "HTTP 200: {\"created_at\": \"2026-08-17T17:33:43.212718+00:00\", \"expired\": false, \"expiry_date\": null, \"member_details\": [], \"members\": [], \"name\": \"Victim Private Queue\", \"owner\": \"victim@example.com\", \"queue_id\": \"8617107586\", \"suspended\": false, \"total_members\": 0, \"type\": \"private\", \"your_position\": null, \"y",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.329417+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: visibility",
+    "action": "List ALL queues (public + private)",
+    "expected": "both test queues present",
+    "observed": "5 queues, contains both: True",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.345438+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: security",
+    "action": "Regular user calls admin endpoint",
+    "expected": "403 admin required",
+    "observed": "HTTP 403: {\"error\": \"admin privilege required\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.360148+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: security",
+    "action": "Unauthenticated call to admin endpoint",
+    "expected": "401 auth required",
+    "observed": "HTTP 401: {\"error\": \"authentication required (missing/invalid token, or account suspended/deleted)\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.375887+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: queue control",
+    "action": "Suspend mallory's queue",
+    "expected": "200 suspended",
+    "observed": "HTTP 200: {\"message\": \"queue 2521990906 suspended\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.401961+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: queue control",
+    "action": "User tries to join SUSPENDED queue",
+    "expected": "403 queue suspended (action propagated)",
+    "observed": "HTTP 403: {\"error\": \"queue is suspended\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.424794+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: queue control",
+    "action": "Restore queue, then user joins",
+    "expected": "restore 200, join succeeds afterwards",
+    "observed": "restore HTTP 200, join HTTP 201",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.452621+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: override",
+    "action": "Admin removes a member from a queue admin does NOT own",
+    "expected": "200 \u2014 admin overrides owner-only rule",
+    "observed": "HTTP 200: {\"message\": \"removed victim@example.com from queue 2521990906\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.468553+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: account control",
+    "action": "Suspend victim's account",
+    "expected": "200 suspended",
+    "observed": "HTTP 200: {\"message\": \"account victim@example.com suspended\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.495488+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: account control",
+    "action": "Suspended user uses their EXISTING token",
+    "expected": "401 \u2014 suspension propagates to live sessions",
+    "observed": "HTTP 401: {\"error\": \"authentication required (missing/invalid token, or account suspended/deleted)\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.517954+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: account control",
+    "action": "Suspended user tries to log in again",
+    "expected": "403 account suspended",
+    "observed": "HTTP 403: {\"error\": \"account suspended\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.677659+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: account control",
+    "action": "Restore victim, then victim logs in",
+    "expected": "restore 200, login 200",
+    "observed": "restore HTTP 200, login HTTP 200",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.873164+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: account control",
+    "action": "Delete mallory's account",
+    "expected": "200 deleted",
+    "observed": "HTTP 200: {\"message\": \"account mallory@example.com deleted (their queues, memberships and sessions removed)\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.902716+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: account control",
+    "action": "Deleted user's token is dead",
+    "expected": "401 \u2014 deletion propagates to sessions",
+    "observed": "HTTP 401: {\"error\": \"authentication required (missing/invalid token, or account suspended/deleted)\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.924952+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: account control",
+    "action": "Deleted user's queue is gone too (cascade)",
+    "expected": "404 \u2014 owned queues removed with account",
+    "observed": "HTTP 404: {\"error\": \"queue not found\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.941248+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: self-protection",
+    "action": "Suspend the admin account itself",
+    "expected": "400 refused",
+    "observed": "HTTP 400: {\"error\": \"cannot suspend the admin account\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.957798+00:00"
+  },
+  {
+    "agent": "Admin Agent",
+    "feature": "Admin: self-protection",
+    "action": "Delete the admin account itself",
+    "expected": "400 refused",
+    "observed": "HTTP 400: {\"error\": \"cannot delete the admin account\"}",
+    "pass": true,
+    "notes": "",
+    "at": "2026-08-17T17:33:43.973042+00:00"
+  }
+]

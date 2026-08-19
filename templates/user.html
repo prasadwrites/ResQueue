@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ResQueue</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --paper:#EEF1F6; --card:#FFFFFF; --ink:#131B26; --muted:#5B6779; --line:#DBE1EA;
+  --accent:#C98A00; --accent-ink:#1A1200; --accent-soft:#FBEED0;
+  --ok:#167A5C; --ok-soft:#E1F3EC;
+  --warn:#B8540C; --warn-soft:#FBEADB;
+  --danger:#B23A3A; --danger-soft:#F9E3E1;
+  --shadow:0 1px 2px rgba(19,27,38,.06),0 8px 24px -12px rgba(19,27,38,.18);
+  --display:"Bahnschrift SemiBold",Bahnschrift,"Segoe UI Semibold","Segoe UI",system-ui,sans-serif;
+  --body:"Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"Cascadia Code",ui-monospace,Consolas,monospace;
+}
+:root[data-theme="dark"]{
+  --paper:#0D1420; --card:#16202E; --ink:#E7EDF6; --muted:#8393A8; --line:#263447;
+  --accent:#F2B93B; --accent-ink:#1A1200; --accent-soft:#3A2E0F;
+  --ok:#4FBE9A; --ok-soft:#12302A;
+  --warn:#E5934A; --warn-soft:#3A2712;
+  --danger:#E27B7B; --danger-soft:#3A1E1E;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 28px -14px rgba(0,0,0,.55);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1420; --card:#16202E; --ink:#E7EDF6; --muted:#8393A8; --line:#263447;
+    --accent:#F2B93B; --accent-ink:#1A1200; --accent-soft:#3A2E0F;
+    --ok:#4FBE9A; --ok-soft:#12302A;
+    --warn:#E5934A; --warn-soft:#3A2712;
+    --danger:#E27B7B; --danger-soft:#3A1E1E;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 28px -14px rgba(0,0,0,.55);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--body);min-height:100vh}
+::selection{background:var(--accent-soft);color:var(--ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+button{font:inherit;cursor:pointer}
+input,select{font:inherit}
+@media (max-width: 480px){
+  input,select{font-size:16px} /* prevents iOS Safari auto-zoom on focus */
+}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+.app{max-width:920px;margin:0 auto;padding:0 20px 64px}
+
+.board-header{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:22px 0 18px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.brand{display:flex;align-items:baseline;gap:10px;flex:0 1 auto;min-width:0}
+.brand .mark{
+  font:700 15px/1 var(--display);letter-spacing:.14em;background:var(--ink);color:var(--paper);
+  padding:6px 8px;border-radius:4px;flex:0 0 auto}
+.brand h1{font:600 21px/1 var(--display);letter-spacing:.04em;margin:0}
+.brand .tag{font:12px var(--body);color:var(--muted)}
+.header-actions{display:flex;align-items:center;gap:10px;flex:0 1 auto;min-width:0}
+@media (max-width: 480px){
+  .board-header{flex-wrap:wrap;row-gap:12px}
+  .brand .tag{display:none}
+  .session-chip .who{max-width:34vw}
+}
+.theme-btn{
+  width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--card);
+  color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:15px}
+.session-chip{
+  display:none;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
+  border-radius:99px;padding:6px 8px 6px 14px;font-size:13px;min-width:0}
+.session-chip.show{display:flex}
+.session-chip .who{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.session-chip .role{
+  font:600 10px/1 var(--mono);letter-spacing:.06em;color:var(--accent-ink);
+  background:var(--accent-soft);padding:3px 7px;border-radius:99px}
+.logout-btn{
+  border:0;background:transparent;color:var(--muted);width:26px;height:26px;border-radius:99px}
+.logout-btn:hover{background:var(--danger-soft);color:var(--danger)}
+
+/* ---- auth panel ---- */
+.auth-panel{max-width:420px;margin:40px auto 0}
+.auth-card{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
+  padding:8px;overflow:hidden}
+.tabs{display:flex;gap:4px;padding:6px;background:var(--paper);border-radius:10px;margin-bottom:2px}
+.tab{
+  flex:1;border:0;background:transparent;padding:9px 4px;border-radius:8px;
+  font:600 12px/1 var(--mono);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.tab.active{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.tab-body{padding:22px 20px 20px;display:flex;flex-direction:column;gap:16px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;color:var(--muted);font-weight:600}
+.field input{
+  padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper);
+  color:var(--ink)}
+.field input:focus{border-color:var(--accent)}
+.field-row{display:flex;gap:10px}
+.field-row .field{flex:1}
+.hint{font-size:12px;color:var(--muted);text-align:center;padding:10px 0}
+.hint button.link{border:0;background:none;color:var(--accent);font-weight:600;padding:0}
+.primary-btn{
+  width:100%;padding:11px;border:0;border-radius:8px;background:var(--ink);color:var(--paper);
+  font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px}
+.primary-btn:hover{opacity:.9}
+.primary-btn:disabled{opacity:.55;cursor:not-allowed}
+.primary-btn.accent{background:var(--accent);color:var(--accent-ink)}
+
+/* ---- board ---- */
+.hidden{display:none!important}
+.board-toolbar{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
+  padding:16px;margin-bottom:18px}
+.board-toolbar h2{margin:0 0 12px;font:600 15px/1 var(--display);letter-spacing:.03em}
+.create-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.create-row .field{flex:1;min-width:150px;margin-bottom:0}
+.create-row select{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+.create-row .primary-btn{width:auto;padding:10px 18px;white-space:nowrap}
+
+.search-toolbar{margin-bottom:22px}
+.search-toolbar .board{margin-top:14px}
+.search-hint{font-size:12px;color:var(--muted);margin:0 0 12px}
+
+.board-section{margin-bottom:26px}
+.section-title{
+  display:flex;align-items:center;gap:8px;font:600 14px/1 var(--display);letter-spacing:.02em;
+  margin:0 0 10px;color:var(--muted)}
+.section-title .count{
+  font:700 10.5px/1 var(--mono);letter-spacing:.04em;background:var(--card);border:1px solid var(--line);
+  color:var(--ink);padding:3px 8px;border-radius:99px}
+.section-title.invited{color:var(--accent-ink)}
+:root[data-theme="dark"] .section-title.invited{color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .section-title.invited{color:var(--accent)}}
+
+.board{display:flex;flex-direction:column;gap:10px}
+.chip.wait{background:var(--accent-soft);color:var(--accent-ink)}
+:root[data-theme="dark"] .chip.wait{color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chip.wait{color:var(--accent)}}
+.empty-state{
+  text-align:center;padding:48px 20px;color:var(--muted);background:var(--card);
+  border:1px dashed var(--line);border-radius:14px;font-size:14px}
+
+.row{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
+  overflow:hidden}
+.row-main{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer}
+.pos-badge{
+  flex:0 0 56px;height:56px;border-radius:10px;background:var(--paper);border:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.pos-badge .no{font:11px/1 var(--mono);color:var(--muted);letter-spacing:.05em}
+.pos-badge .num{font:700 20px/1 var(--mono);font-variant-numeric:tabular-nums}
+.pos-badge.mine{background:var(--accent-soft);border-color:var(--accent)}
+.pos-badge.mine .num{color:var(--accent-ink)}
+.row-info{flex:1;min-width:0}
+.row-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row-title .name{font:600 15px var(--display);letter-spacing:.01em}
+.qid{
+  font:11px var(--mono);color:var(--muted);background:var(--paper);border:1px solid var(--line);
+  padding:2px 6px;border-radius:5px;letter-spacing:.02em}
+.qid:hover{color:var(--ink);border-color:var(--muted)}
+.row-sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+.chips{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.chip{
+  font:600 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;
+  padding:5px 8px;border-radius:5px}
+.chip.type{background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+.chip.open{background:var(--ok-soft);color:var(--ok)}
+.chip.suspended{background:var(--warn-soft);color:var(--warn)}
+.chip.expired{background:var(--danger-soft);color:var(--danger)}
+.row-action{flex:0 0 auto}
+.mini-btn{
+  padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--paper);
+  color:var(--ink);font-weight:600;font-size:12.5px}
+.mini-btn.accent{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.mini-btn.danger{background:transparent;color:var(--danger);border-color:var(--danger-soft)}
+.mini-btn.danger:hover{background:var(--danger-soft)}
+.chevron{color:var(--muted);transition:transform .15s ease;flex:0 0 auto}
+.row.expanded .chevron{transform:rotate(180deg)}
+
+.row-detail{border-top:1px solid var(--line);padding:16px;background:var(--paper);display:none}
+.row.expanded .row-detail{display:block}
+.detail-grid{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:14px;font-size:12.5px;color:var(--muted)}
+.detail-grid b{color:var(--ink)}
+.member-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.member{
+  display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
+  border-radius:8px;padding:7px 10px;font-size:13px}
+.member .check{flex:0 0 auto}
+.member input[type="checkbox"]{width:16px;height:16px;accent-color:var(--accent)}
+.member .n{
+  font:700 11px var(--mono);color:var(--muted);width:20px;text-align:right;font-variant-numeric:tabular-nums}
+.member .e{flex:1;display:flex;flex-direction:column;gap:1px}
+.member .joined-at{font-size:10.5px;color:var(--muted)}
+.member.you{border-color:var(--accent);background:var(--accent-soft)}
+.member .member-wait{
+  font:600 11px var(--mono);color:var(--accent-ink);background:var(--accent-soft);
+  padding:3px 8px;border-radius:99px;white-space:nowrap}
+:root[data-theme="dark"] .member .member-wait{color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .member .member-wait{color:var(--accent)}}
+.member .member-wait.unset{color:var(--muted);background:var(--paper)}
+.member .rm{border:0;background:none;color:var(--muted);width:22px;height:22px;border-radius:99px}
+.member .rm:hover{background:var(--danger-soft);color:var(--danger)}
+.select-all{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-bottom:8px}
+.select-all input{width:16px;height:16px;accent-color:var(--accent)}
+.detail-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.share-form{display:flex;gap:8px;margin-top:12px}
+.share-form input{
+  flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+.wait-form{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.wait-form label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:6px}
+.wait-row{display:flex;gap:8px}
+.wait-row input{
+  width:110px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+
+/* ---- toasts ---- */
+.toasts{position:fixed;top:18px;right:18px;display:flex;flex-direction:column;gap:8px;z-index:50;width:min(320px,90vw)}
+.toast{
+  background:var(--ink);color:var(--paper);padding:11px 14px;border-radius:9px;font-size:13px;
+  box-shadow:var(--shadow);animation:toast-in .18s ease-out;display:flex;gap:8px;align-items:flex-start}
+.toast.err{background:var(--danger)}
+.toast.ok{background:var(--ok)}
+@keyframes toast-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="board-header">
+    <div class="brand">
+      <span class="mark">RQ</span>
+      <div><h1>ResQueue</h1><div class="tag">now serving</div></div>
+    </div>
+    <div class="header-actions">
+      <div class="session-chip" id="sessionChip">
+        <span class="who" id="whoEmail"></span>
+        <span class="role" id="whoRole">USER</span>
+        <button class="logout-btn" id="logoutBtn" title="Log out">&#10005;</button>
+      </div>
+      <button class="theme-btn" id="themeBtn" title="Toggle theme">&#9789;</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="auth-panel" id="authPanel">
+      <div class="auth-card">
+        <div class="tabs">
+          <button class="tab active" data-tab="register">Create account</button>
+          <button class="tab" data-tab="verify">Verify email</button>
+          <button class="tab" data-tab="login">Log in</button>
+        </div>
+
+        <div class="tab-body" data-panel="register">
+          <div class="field"><label>Email</label><input id="regEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
+          <div class="field"><label>Password</label><input id="regPassword" type="password" placeholder="At least 8 characters" autocomplete="new-password"></div>
+          <button class="primary-btn accent" id="regBtn">Create account</button>
+          <p class="hint">Already registered? <button class="link" data-goto="login">Log in</button></p>
+        </div>
+
+        <div class="tab-body hidden" data-panel="verify">
+          <div class="field"><label>Email</label><input id="verEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
+          <div class="field-row">
+            <div class="field"><label>Verification code</label><input id="verCode" placeholder="000000" maxlength="6"></div>
+          </div>
+          <button class="primary-btn" id="fetchCodeBtn" style="margin-bottom:10px">Fetch code from inbox</button>
+          <button class="primary-btn accent" id="verBtn">Verify email</button>
+        </div>
+
+        <div class="tab-body hidden" data-panel="login">
+          <div class="field"><label>Email</label><input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
+          <div class="field"><label>Password</label><input id="loginPassword" type="password" placeholder="Your password" autocomplete="current-password"></div>
+          <button class="primary-btn accent" id="loginBtn">Log in</button>
+          <p class="hint">New here? <button class="link" data-goto="register">Create account</button></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="board-panel hidden" id="boardPanel">
+      <div class="board-toolbar">
+        <h2>Start a new queue</h2>
+        <div class="create-row">
+          <div class="field"><label>Name</label><input id="qName" placeholder="e.g. Weekend brunch"></div>
+          <div class="field"><label>Type</label>
+            <select id="qType"><option value="public">Public</option><option value="private">Private</option></select>
+          </div>
+          <div class="field"><label>Expiry (optional)</label><input id="qExpiry" type="datetime-local"></div>
+          <button class="primary-btn accent" id="createBtn">Create queue</button>
+        </div>
+      </div>
+
+      <div class="board-toolbar search-toolbar">
+        <h2>Find a queue</h2>
+        <p class="search-hint">Search by owner email, exact queue ID, or name — this only surfaces
+          <b>public</b> queues. Private queues never show up here; their owner has to invite you by email.
+          A queue can also be referenced publicly like a handle: prefix its name with
+          <b>&gt;</b>, e.g. <b>&gt;Weekend-Brunch</b>, the same way <b>@</b> works for an account.</p>
+        <div class="create-row">
+          <div class="field"><label>Email, ID, or &gt;name</label>
+            <input id="searchQ" placeholder="e.g. alice@example.com, 4625126077, or &gt;brunch"></div>
+          <button class="primary-btn accent" id="searchBtn">Search</button>
+        </div>
+        <div class="board" id="searchResults"></div>
+      </div>
+
+      <section class="board-section" id="invitedSection" style="display:none">
+        <h2 class="section-title invited">Invited to you <span class="count" id="cInvited"></span></h2>
+        <div class="board" id="invitedBoard"></div>
+      </section>
+
+      <section class="board-section">
+        <h2 class="section-title">Your queues <span class="count" id="cMine"></span></h2>
+        <div class="board" id="createdBoard"></div>
+      </section>
+
+      <section class="board-section">
+        <h2 class="section-title">Queues you've joined <span class="count" id="cJoined"></span></h2>
+        <div class="board" id="joinedBoard"></div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+const API = '';
+let TOKEN = localStorage.getItem('rq_token');
+let EMAIL = localStorage.getItem('rq_email');
+let expandedId = null;
+
+// ---------- theme ----------
+const root = document.documentElement;
+const savedTheme = localStorage.getItem('rq_theme');
+root.setAttribute('data-theme', savedTheme || 'dark'); // dark by default until the user picks light
+document.getElementById('themeBtn').onclick = () => {
+  const cur = root.getAttribute('data-theme') || 'dark';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  localStorage.setItem('rq_theme', next);
+};
+
+// ---------- toasts ----------
+function toast(message, kind) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (kind ? ' ' + kind : '');
+  el.textContent = message;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3800);
+}
+
+// ---------- api ----------
+async function api(method, path, body) {
+  const headers = {'Content-Type': 'application/json'};
+  if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
+  const r = await fetch(API + path, {method, headers, body: body ? JSON.stringify(body) : undefined});
+  let data = {};
+  try { data = await r.json(); } catch (_) {}
+  if (!r.ok) throw new Error(data.error || ('request failed (' + r.status + ')'));
+  return data;
+}
+async function withBusy(btn, fn) {
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Working…';
+  try { await fn(); } catch (e) { toast(e.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = original; }
+}
+
+// ---------- auth tabs ----------
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
+document.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => showTab(b.dataset.goto));
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-body').forEach(p => p.classList.toggle('hidden', p.dataset.panel !== name));
+}
+
+document.getElementById('regBtn').onclick = (e) => withBusy(e.target, async () => {
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  await api('POST', '/api/register', {email, password});
+  toast('Account created — check your inbox for a verification code.', 'ok');
+  document.getElementById('verEmail').value = email;
+  showTab('verify');
+});
+
+document.getElementById('fetchCodeBtn').onclick = (e) => withBusy(e.target, async () => {
+  const email = document.getElementById('verEmail').value.trim();
+  if (!email) throw new Error('enter your email first');
+  const mails = await (await fetch(API + '/api/dev/outbox?email=' + encodeURIComponent(email))).json();
+  const last = [...mails].reverse().find(m => /verification code is: (\d{6})/.test(m.body));
+  if (!last) throw new Error('no verification email found yet');
+  document.getElementById('verCode').value = last.body.match(/(\d{6})/)[1];
+  toast('Code retrieved from inbox.', 'ok');
+});
+
+document.getElementById('verBtn').onclick = (e) => withBusy(e.target, async () => {
+  const email = document.getElementById('verEmail').value.trim();
+  const code = document.getElementById('verCode').value.trim();
+  await api('POST', '/api/verify', {email, code});
+  toast('Email verified — you can log in now.', 'ok');
+  document.getElementById('loginEmail').value = email;
+  showTab('login');
+});
+
+document.getElementById('loginBtn').onclick = (e) => withBusy(e.target, async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const data = await api('POST', '/api/login', {email, password});
+  TOKEN = data.token; EMAIL = data.email;
+  localStorage.setItem('rq_token', TOKEN);
+  localStorage.setItem('rq_email', EMAIL);
+  toast('Welcome back, ' + EMAIL + '.', 'ok');
+  enterApp(data.is_admin);
+});
+
+document.getElementById('logoutBtn').onclick = () => {
+  TOKEN = null; EMAIL = null;
+  localStorage.removeItem('rq_token'); localStorage.removeItem('rq_email');
+  document.getElementById('sessionChip').classList.remove('show');
+  document.getElementById('boardPanel').classList.add('hidden');
+  document.getElementById('authPanel').classList.remove('hidden');
+  document.querySelectorAll('.auth-card input').forEach(i => i.value = '');
+  showTab('login');
+  toast('Logged out.');
+};
+
+function enterApp(isAdmin) {
+  document.getElementById('authPanel').classList.add('hidden');
+  document.getElementById('boardPanel').classList.remove('hidden');
+  document.getElementById('whoEmail').textContent = EMAIL;
+  document.getElementById('whoRole').textContent = isAdmin ? 'ADMIN' : 'USER';
+  document.getElementById('sessionChip').classList.add('show');
+  loadBoard();
+}
+
+// ---------- board ----------
+document.getElementById('createBtn').onclick = (e) => withBusy(e.target, async () => {
+  const name = document.getElementById('qName').value.trim();
+  const type = document.getElementById('qType').value;
+  const expiryRaw = document.getElementById('qExpiry').value;
+  await api('POST', '/api/queues', {name, type, expiry_date: expiryRaw || null});
+  document.getElementById('qName').value = '';
+  document.getElementById('qExpiry').value = '';
+  toast('Queue created.', 'ok');
+  loadBoard();
+});
+
+async function loadBoard() {
+  try {
+    const data = await api('GET', '/api/queues');
+    document.getElementById('cMine').textContent = data.created_by_me.length;
+    document.getElementById('cJoined').textContent = data.joined_by_me.length;
+    document.getElementById('cInvited').textContent = data.invited.length;
+    document.getElementById('invitedSection').style.display = data.invited.length ? '' : 'none';
+    renderSection('invitedBoard', data.invited, 'No pending invitations.');
+    renderSection('createdBoard', data.created_by_me, 'You haven’t created any queues yet.');
+    renderSection('joinedBoard', data.joined_by_me, 'You haven’t joined any queues yet.');
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+document.getElementById('searchBtn').onclick = (e) => withBusy(e.target, async () => {
+  const q = document.getElementById('searchQ').value.trim();
+  if (!q) { renderSection('searchResults', [], 'Type an email, ID, or name to search.'); return; }
+  const results = await api('GET', '/api/queues/search?q=' + encodeURIComponent(q));
+  renderSection('searchResults', results, 'No public queues matched that search.');
+});
+
+function statusChip(q) {
+  if (q.suspended) return '<span class="chip suspended">Suspended</span>';
+  if (q.expired) return '<span class="chip expired">Expired</span>';
+  return '<span class="chip open">Open</span>';
+}
+
+function renderSection(containerId, list, emptyText) {
+  const board = document.getElementById(containerId);
+  if (!list.length) {
+    board.innerHTML = '<div class="empty-state">' + emptyText + '</div>';
+    return;
+  }
+  board.innerHTML = list.map(q => rowHtml(q, containerId)).join('');
+  list.forEach(q => {
+    const row = document.getElementById('row-' + containerId + '-' + q.queue_id);
+    row.querySelector('.row-main').addEventListener('click', (ev) => {
+      if (ev.target.closest('button') || ev.target.closest('.qid')) return;
+      toggleExpand(row.id);
+    });
+    row.querySelectorAll('[data-copy]').forEach(el => el.addEventListener('click', (ev) => {
+      ev.stopPropagation(); copyId(el.dataset.copy);
+    }));
+    wireRowActions(row, q);
+  });
+  if (expandedId && document.getElementById(expandedId)) {
+    document.getElementById(expandedId).classList.add('expanded');
+  }
+}
+
+function rowHtml(q, containerId) {
+  const mine = q.owner === EMAIL;
+  const joined = q.your_position != null;
+  return '<div class="row" id="row-' + containerId + '-' + q.queue_id + '">' +
+    '<div class="row-main">' +
+      '<div class="pos-badge' + (joined ? ' mine' : '') + '">' +
+        '<div class="no">' + (joined ? 'YOUR NO.' : 'IN LINE') + '</div>' +
+        '<div class="num">' + (joined ? q.your_position : q.total_members) + '</div>' +
+      '</div>' +
+      '<div class="row-info">' +
+        '<div class="row-title"><span class="name">' + esc(q.name) + '</span>' +
+          '<span class="qid" data-copy="' + q.queue_id + '" title="Click to copy">#' + q.queue_id + '</span></div>' +
+        '<div class="row-sub">' + (mine ? 'You own this queue' : 'Owner ' + esc(q.owner)) + '</div>' +
+      '</div>' +
+      '<div class="chips">' +
+        '<span class="chip type">' + q.type + '</span>' + statusChip(q) +
+        (joined && q.your_wait_minutes != null ? '<span class="chip wait">~' + q.your_wait_minutes + ' MIN</span>' : '') +
+      '</div>' +
+      '<div class="row-action">' + rowActionBtn(q, mine, joined) + '</div>' +
+      '<div class="chevron">&#9662;</div>' +
+    '</div>' +
+    '<div class="row-detail">' + detailHtml(q, mine) + '</div>' +
+  '</div>';
+}
+
+function rowActionBtn(q, mine, joined) {
+  if (mine) return '';
+  if (joined) return '<button class="mini-btn" data-act="withdraw">Withdraw</button>';
+  if (q.suspended || q.expired) return '';
+  return '<button class="mini-btn accent" data-act="join">Join</button>';
+}
+
+function memberRow(m, i, mine) {
+  const checkbox = mine
+    ? '<input type="checkbox" class="member-check" data-email="' + esc(m.email) + '">'
+    : '';
+  const waitBadge = mine
+    ? '<span class="member-wait' + (m.waitMinutes == null ? ' unset' : '') + '">' +
+        (m.waitMinutes != null ? m.waitMinutes + ' min' : 'not set') + '</span>'
+    : '';
+  return '<div class="member' + (m.email === EMAIL ? ' you' : '') + '">' +
+    checkbox +
+    '<span class="n">' + (i + 1) + '</span>' +
+    '<span class="e">' + esc(m.email) +
+      (m.joinedAt ? '<span class="joined-at">joined ' + esc(m.joinedAt) + '</span>' : '') + '</span>' +
+    waitBadge +
+    (mine ? '<button class="rm" data-rm="' + esc(m.email) + '" title="Remove">&#10005;</button>' : '') +
+  '</div>';
+}
+
+function detailHtml(q, mine) {
+  const rows = q.member_details
+    ? q.member_details.map(m => ({email: m.email, joinedAt: new Date(m.joined_at).toLocaleString(), waitMinutes: m.wait_minutes}))
+    : q.members.map(e => ({email: e, joinedAt: null, waitMinutes: null}));
+  const members = rows.map((m, i) => memberRow(m, i, mine)).join('')
+    || '<div class="row-sub">No one has joined yet.</div>';
+  const yourWaitRow = (!mine && q.your_position != null)
+    ? '<div><b>Your estimated wait</b> ' +
+        (q.your_wait_minutes != null ? q.your_wait_minutes + ' minutes' : 'Not set yet') + '</div>'
+    : '';
+  const selectAll = (mine && rows.length)
+    ? '<label class="select-all"><input type="checkbox" class="select-all-cb"> Select all</label>'
+    : '';
+  const waitBlock = (mine && rows.length)
+    ? '<form class="wait-form" data-act="wait-bulk">' +
+        '<label>Set "time to reach the top" (minutes) for the members checked above — different groups can get different times. Leave blank to clear it.</label>' +
+        '<div class="wait-row"><input type="number" min="0" step="1" placeholder="e.g. 15">' +
+          '<button class="mini-btn accent" type="submit">Apply to selected</button></div>' +
+      '</form>'
+    : '';
+  return '<div class="detail-grid">' +
+      '<div><b>Created</b> ' + new Date(q.created_at).toLocaleString() + '</div>' +
+      '<div><b>Expiry</b> ' + (q.expiry_date ? new Date(q.expiry_date).toLocaleString() : 'None') + '</div>' +
+      '<div><b>Members</b> ' + q.total_members + '</div>' +
+      yourWaitRow +
+    '</div>' +
+    selectAll +
+    '<div class="member-list">' + members + '</div>' +
+    waitBlock +
+    '<div class="detail-actions">' +
+      (mine ? '<button class="mini-btn" data-act="clear">Clear all members</button>' +
+              '<button class="mini-btn danger" data-act="delete">Delete queue</button>'
+       : '') +
+    '</div>' +
+    (mine && q.type === 'private'
+      ? '<form class="share-form" data-act="share"><input placeholder="Share with email…" type="email" required>' +
+        '<button class="mini-btn accent" type="submit">Share</button></form>'
+      : '');
+}
+
+function toggleExpand(rowId) {
+  const row = document.getElementById(rowId);
+  const isOpen = row.classList.contains('expanded');
+  document.querySelectorAll('.row.expanded').forEach(r => r.classList.remove('expanded'));
+  if (!isOpen) { row.classList.add('expanded'); expandedId = rowId; }
+  else expandedId = null;
+}
+
+function wireRowActions(row, q) {
+  const btn = row.querySelector('[data-act="join"], [data-act="withdraw"]');
+  if (btn) btn.onclick = (ev) => { ev.stopPropagation(); runAction(btn, q.queue_id, btn.dataset.act); };
+
+  const clearBtn = row.querySelector('[data-act="clear"]');
+  if (clearBtn) clearBtn.onclick = () => {
+    if (confirm('Remove all ' + q.total_members + ' member' + (q.total_members === 1 ? '' : 's') +
+        ' from "' + q.name + '"? This cannot be undone.')) runAction(clearBtn, q.queue_id, 'clear');
+  };
+
+  const delBtn = row.querySelector('[data-act="delete"]');
+  if (delBtn) delBtn.onclick = () => {
+    if (confirm('Delete "' + q.name + '"? This cannot be undone.')) runAction(delBtn, q.queue_id, 'delete');
+  };
+
+  row.querySelectorAll('[data-rm]').forEach(b => b.onclick = () =>
+    runAction(b, q.queue_id, 'remove', {member: b.dataset.rm}));
+
+  const shareForm = row.querySelector('[data-act="share"]');
+  if (shareForm) shareForm.onsubmit = (ev) => {
+    ev.preventDefault();
+    const input = shareForm.querySelector('input');
+    runAction(shareForm.querySelector('button'), q.queue_id, 'share', {email: input.value.trim()});
+  };
+
+  const selectAllCb = row.querySelector('.select-all-cb');
+  if (selectAllCb) selectAllCb.onchange = () => {
+    row.querySelectorAll('.member-check').forEach(cb => { cb.checked = selectAllCb.checked; });
+  };
+
+  const waitBulkForm = row.querySelector('[data-act="wait-bulk"]');
+  if (waitBulkForm) waitBulkForm.onsubmit = (ev) => {
+    ev.preventDefault();
+    const emails = [...row.querySelectorAll('.member-check:checked')].map(cb => cb.dataset.email);
+    if (!emails.length) { toast('Select at least one member first.', 'err'); return; }
+    const input = waitBulkForm.querySelector('input');
+    runAction(waitBulkForm.querySelector('button'), q.queue_id, 'wait-bulk',
+      {emails, minutes: input.value.trim()});
+  };
+}
+
+async function runAction(el, qid, act, extra) {
+  const busy = el.tagName === 'BUTTON' ? el : null;
+  try {
+    if (busy) busy.disabled = true;
+    if (act === 'join') { await api('POST', '/api/queues/' + qid + '/join'); toast('Joined the queue.', 'ok'); }
+    if (act === 'withdraw') { await api('POST', '/api/queues/' + qid + '/withdraw'); toast('Withdrawn.', 'ok'); }
+    if (act === 'delete') { await api('DELETE', '/api/queues/' + qid); toast('Queue deleted.', 'ok'); expandedId = null; }
+    if (act === 'clear') { await api('DELETE', '/api/queues/' + qid + '/members'); toast('Members cleared.', 'ok'); }
+    if (act === 'remove') { await api('DELETE', '/api/queues/' + qid + '/members/' + encodeURIComponent(extra.member)); toast('Member removed.', 'ok'); }
+    if (act === 'share') { await api('POST', '/api/queues/' + qid + '/share', {email: extra.email}); toast('Shared with ' + extra.email + '.', 'ok'); }
+    if (act === 'wait-bulk') {
+      const minutes = extra.minutes === '' ? null : Number(extra.minutes);
+      await api('POST', '/api/queues/' + qid + '/members/wait-time', {emails: extra.emails, minutes});
+      toast('Updated wait time for ' + extra.emails.length +
+        (extra.emails.length === 1 ? ' member.' : ' members.'), 'ok');
+    }
+    loadBoard();
+    const q = document.getElementById('searchQ').value.trim();
+    if (q) { const r = await api('GET', '/api/queues/search?q=' + encodeURIComponent(q)); renderSection('searchResults', r, 'No public queues matched that search.'); }
+  } catch (e) { toast(e.message, 'err'); if (busy) busy.disabled = false; }
+}
+
+function copyId(id) {
+  navigator.clipboard?.writeText(id).then(() => toast('Copied #' + id + ' to clipboard.'));
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---------- boot ----------
+if (TOKEN && EMAIL) {
+  api('GET', '/api/me').then(me => enterApp(me.is_admin)).catch(() => {
+    TOKEN = null; localStorage.removeItem('rq_token');
+  });
+}
+</script>
+</body>
+</html>

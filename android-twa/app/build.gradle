@@ -1,0 +1,47 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.resqueue.app'
+    compileSdk 34
+
+    defaultConfig {
+        // CHANGE THIS before publishing — it is permanent once you upload a
+        // version to Play Console. Reverse-DNS, ideally under a domain you own.
+        applicationId "com.resqueue.app"
+        minSdkVersion 21
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    signingConfigs {
+        release {
+            // Fill these in (see ../README.md "Signing") or pass via
+            // -Pandroid.injected.signing.store.file etc. on the CLI/CI —
+            // never commit a real keystore or its passwords to source control.
+            if (project.hasProperty('RESQUEUE_KEYSTORE')) {
+                storeFile file(RESQUEUE_KEYSTORE)
+                storePassword RESQUEUE_KEYSTORE_PASSWORD
+                keyAlias RESQUEUE_KEY_ALIAS
+                keyPassword RESQUEUE_KEY_PASSWORD
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (project.hasProperty('RESQUEUE_KEYSTORE')) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    buildFeatures {
+        viewBinding false
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

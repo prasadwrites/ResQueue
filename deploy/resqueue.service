@@ -1,0 +1,35 @@
+[Unit]
+Description=ResQueue (Flask/Gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=resqueue
+Group=resqueue
+WorkingDirectory=/opt/resqueue
+Environment="PATH=/opt/resqueue/venv/bin"
+# Set a real admin password before starting this in production — the code
+# falls back to a well-known default otherwise. Better yet, use
+# EnvironmentFile= below and keep the value out of this unit file entirely.
+Environment="RESQUEUE_ADMIN_EMAIL=admin@your-domain.example.com"
+Environment="RESQUEUE_ADMIN_PASSWORD=change-me-before-first-boot"
+# EnvironmentFile=/opt/resqueue/resqueue.env
+# Single worker: the app uses SQLite, which only supports one writer at a
+# time. Multiple gunicorn worker PROCESSES each open their own connection
+# and will intermittently hit "database is locked" under concurrent writes.
+# Raise --workers only after moving to PostgreSQL (see README "Scaling up").
+ExecStart=/opt/resqueue/venv/bin/gunicorn \
+    --workers 1 \
+    --threads 4 \
+    --bind 127.0.0.1:8765 \
+    --access-logfile /var/log/resqueue/access.log \
+    --error-logfile /var/log/resqueue/error.log \
+    resqueue_server:app
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/resqueue /var/log/resqueue
+
+[Install]
+WantedBy=multi-user.target
